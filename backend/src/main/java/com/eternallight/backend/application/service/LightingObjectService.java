@@ -53,7 +53,7 @@ public class LightingObjectService {
     @Transactional(readOnly = true)
     public LightingObject getById(Long id) {
         LightingObjectEntity e = lightingObjectRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Lighting object not found: id=" + id));
+                .orElseThrow(() -> new NotFoundException("Объект освещения не найден: id=" + id));
         return toDomain(e);
     }
 
@@ -67,7 +67,7 @@ public class LightingObjectService {
     @Transactional
     public LightingObject update(Long id, UpdateLightingObjectRequest r) {
         LightingObjectEntity existing = lightingObjectRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Lighting object not found: id=" + id));
+                .orElseThrow(() -> new NotFoundException("Объект освещения не найден: id=" + id));
 
         validateRefs(r.administrativeDistrictId(), r.streetId());
 
@@ -88,17 +88,17 @@ public class LightingObjectService {
     @Transactional
     public void delete(Long id) {
         if (!lightingObjectRepository.existsById(id)) {
-            throw new NotFoundException("Lighting object not found: id=" + id);
+            throw new NotFoundException("Объект освещения не найден: id=" + id);
         }
         lightingObjectRepository.deleteById(id);
     }
 
     private void validateRefs(Long administrativeDistrictId, Long streetId) {
         if (administrativeDistrictId != null && !administrativeDistrictRepository.existsById(administrativeDistrictId)) {
-            throw new NotFoundException("Administrative district not found: id=" + administrativeDistrictId);
+            throw new NotFoundException("Административный район не найден: id=" + administrativeDistrictId);
         }
         if (streetId != null && !streetRepository.existsById(streetId)) {
-            throw new NotFoundException("Street not found: id=" + streetId);
+            throw new NotFoundException("Улица не найдена: id=" + streetId);
         }
     }
 

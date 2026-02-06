@@ -6,6 +6,7 @@ import com.eternallight.backend.api.dto.response.LightingObjectResponse;
 import com.eternallight.backend.api.mapper.LightingObjectApiMapper;
 import com.eternallight.backend.application.service.LightingObjectService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,4 +48,5 @@ public class LightingObjectController {
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
+
 }
