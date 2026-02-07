@@ -35,13 +35,19 @@ public class WorkActDismantledEquipmentEntity {
     @Column(name = "manufacture_year")
     private Integer manufactureYear;
 
-    @Column(name = "quantity")
+    @Column(name = "quantity", precision = 14, scale = 3)
     private BigDecimal quantity;
 
-    // ✅ ВАЖНО: имя колонки как в БД
+    // ✅ ВАЖНО: именно equipment_condition_id (как в твоей БД)
     @Column(name = "equipment_condition_id")
     private Long equipmentConditionId;
 
     @Column(name = "storage_or_transfer_place")
     private String storageOrTransferPlace;
+
+    public static WorkActDismantledEquipmentEntity create(Long workActId) {
+        WorkActDismantledEquipmentEntity e = new WorkActDismantledEquipmentEntity();
+        e.workActId = workActId;
+        return e;
+    }
 }
