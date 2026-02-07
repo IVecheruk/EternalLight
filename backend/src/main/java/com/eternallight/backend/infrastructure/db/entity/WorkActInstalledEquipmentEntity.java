@@ -50,4 +50,10 @@ public class WorkActInstalledEquipmentEntity {
 
     @Column(name = "passport_or_certificate_number")
     private String passportOrCertificateNumber;
+
+    public static WorkActInstalledEquipmentEntity create(Long workActId) {
+        WorkActInstalledEquipmentEntity e = new WorkActInstalledEquipmentEntity();
+        e.workActId = workActId;
+        return e;
+    }
 }
