@@ -32,7 +32,14 @@ public class SecurityConfig {
                     .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                            .requestMatchers("/api/v1/auth/**", "/actuator/**").permitAll()
+
+                            // ✅ public только auth endpoints
+                            .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+
+                            // actuator можно оставить public
+                            .requestMatchers("/actuator/**").permitAll()
+
+                            // всё остальное — только с токеном
                             .anyRequest().authenticated()
                     )
                     .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

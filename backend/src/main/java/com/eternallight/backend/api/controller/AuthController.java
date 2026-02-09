@@ -28,18 +28,8 @@ public class AuthController {
 
     @GetMapping("/me")
     public MeResponse me(Authentication auth) {
-        // в твоём JwtAuthFilter principal = UserDetails
-        Object principal = auth.getPrincipal();
-
-        String email = auth.getName(); // по умолчанию username
-        String role = auth.getAuthorities().stream()
-                .findFirst()
-                .map(a -> a.getAuthority())
-                .orElse("UNKNOWN");
-
-        // если у тебя UserDetails хранит email иначе — можно достать тут явно
-        return new MeResponse(email, role);
+        return new MeResponse(auth.getName(), auth.getAuthorities().toString());
     }
 
-    public record MeResponse(String email, String role) {}
+    public record MeResponse(String email, String authorities) {}
 }

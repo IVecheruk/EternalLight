@@ -2,9 +2,8 @@ package com.eternallight.backend.infrastructure.security;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "app.security.jwt")
+@ConfigurationProperties(prefix = "app.jwt")
 public record JwtProperties(
         String secret,
-        long accessTtlMin,
-        long refreshTtlDays
+        long accessTtlSeconds
 ) {}

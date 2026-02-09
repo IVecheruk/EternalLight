@@ -28,10 +28,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return HttpMethod.OPTIONS.matches(request.getMethod())
-                || path.startsWith("/api/v1/auth/")
-                || path.startsWith("/actuator/");
+
+        if (HttpMethod.OPTIONS.matches(request.getMethod())) return true;
+
+        // ✅ пропускаем только login/register (а НЕ /me)
+        if (HttpMethod.POST.matches(request.getMethod())
+                && (path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/register"))) {
+            return true;
+        }
+
+        return path.startsWith("/actuator/");
     }
+
 
     @Override
     protected void doFilterInternal(
@@ -46,23 +54,37 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        try {
-            String token = header.substring(7);
-            String email = jwtService.extractEmail(token);
-            String role = jwtService.extractRole(token);
+        // если уже есть аутентификация — не трогаем
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                userRepository.findByEmail(email).ifPresent(u -> {
-                    var auth = new UsernamePasswordAuthenticationToken(
-                            email,
-                            null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                    );
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                });
+        String token = header.substring(7);
+
+        try {
+            // валидируем/парсим подпись+exp
+            String email = jwtService.extractEmail(token);
+            if (email == null || email.isBlank()) {
+                filterChain.doFilter(request, response);
+                return;
             }
-        } catch (Exception ignored) {
+
+            userRepository.findByEmail(email).ifPresent(user -> {
+                String role = user.getRole(); // USER/ADMIN
+                var auth = new UsernamePasswordAuthenticationToken(
+                        user.getEmail(),
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                );
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            });
+
+        } catch (Exception ex) {
+            // НЕ аутентифицируем, просто пропускаем дальше
+            // Для дебага можно временно включить:
+            // System.out.println("JWT error: " + ex.getMessage());
         }
 
         filterChain.doFilter(request, response);
