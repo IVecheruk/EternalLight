@@ -1,5 +1,5 @@
 import { Card } from "@/shared/ui/Card";
-import { useAuth } from "@/features/auth/model/useAuth";
+import { useAuth } from "@/features/auth/model/AuthContext";
 
 export const ProfilePage = () => {
     const { user } = useAuth();

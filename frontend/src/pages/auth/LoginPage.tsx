@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
 import { Button } from "@/shared/ui/Button";
-import { useAuth } from "@/features/auth/model/useAuth";
+import { useAuth } from "@/features/auth/model/AuthContext";
+
 
 export const LoginPage = () => {
     const nav = useNavigate();

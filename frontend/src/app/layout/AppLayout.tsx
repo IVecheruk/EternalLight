@@ -1,5 +1,5 @@
 import { Link, Outlet } from "react-router-dom";
-import { useAuth } from "@/features/auth/model/useAuth";
+import { useAuth } from "@/features/auth/model/AuthContext";
 import { Button } from "@/shared/ui/Button";
 
 export const AppLayout = () => {

@@ -1,16 +1,19 @@
-export type LoginRequest = {
-    username: string;
-    password: string;
-};
-
-export type LoginResponse = {
-    accessToken: string;
-};
+import { http } from "../../../shared/api/http";
+import type { LoginRequest, RegisterRequest, TokenResponse, MeResponse } from "./types";
 
 export const authApi = {
-    // Скелет. Пока без реального backend auth.
-    login: async (_body: LoginRequest): Promise<LoginResponse> => {
-        await new Promise((r) => setTimeout(r, 250));
-        return { accessToken: "DEV_TOKEN" };
+    async login(body: LoginRequest): Promise<TokenResponse> {
+        const { data } = await http.post<TokenResponse>("/api/v1/auth/login", body);
+        return data;
+    },
+
+    async register(body: RegisterRequest): Promise<TokenResponse> {
+        const { data } = await http.post<TokenResponse>("/api/v1/auth/register", body);
+        return data;
+    },
+
+    async me(): Promise<MeResponse> {
+        const { data } = await http.get<MeResponse>("/api/v1/auth/me");
+        return data;
     },
 };
