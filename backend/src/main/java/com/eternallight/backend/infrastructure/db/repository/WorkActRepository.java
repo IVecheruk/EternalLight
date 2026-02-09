@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkActRepository extends JpaRepository<WorkActEntity, Long> {
 
+    // A) Если в WorkActEntity есть поле: private Long executorOrgId;
+    boolean existsByExecutorOrgId(Long executorOrgId);
+
     Page<WorkActEntity> findAllByExecutorOrgId(Long executorOrgId, Pageable pageable);
 
     Page<WorkActEntity> findAllByLightingObjectId(Long lightingObjectId, Pageable pageable);
