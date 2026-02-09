@@ -4,7 +4,7 @@ import type { Organization } from "@/entities/organization/model/types";
 import { Modal } from "@/shared/ui/Modal";
 import { CreateOrganizationForm } from "@/features/organizations/create/ui/CreateOrganizationForm";
 
-export default function OrganizationsPage() {
+export const OrganizationsPage = () => {
     const [items, setItems] = useState<Organization[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -30,15 +30,10 @@ export default function OrganizationsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <header className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-                        Organizations
-                    </h1>
-                    <p className="text-sm text-gray-600">
-                        Список организаций из backend (Spring Boot).
-                    </p>
+                    <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Organizations</h1>
+                    <p className="text-sm text-gray-600">Список организаций из backend (Spring Boot).</p>
                 </div>
 
                 <button
@@ -50,7 +45,6 @@ export default function OrganizationsPage() {
                 </button>
             </header>
 
-            {/* Content */}
             {loading && (
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-700">
                     Loading…
@@ -71,8 +65,8 @@ export default function OrganizationsPage() {
 
                     {items.length === 0 ? (
                         <div className="px-5 py-6 text-sm text-gray-600">
-                            Пока пусто. Нажми <span className="font-medium">+ New</span>, чтобы
-                            создать первую организацию.
+                            Пока пусто. Нажми <span className="font-medium">+ New</span>, чтобы создать первую
+                            организацию.
                         </div>
                     ) : (
                         <ul className="divide-y divide-gray-200">
@@ -80,29 +74,20 @@ export default function OrganizationsPage() {
                                 <li key={o.id} className="px-5 py-4">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
-                                            <div className="truncate text-sm font-semibold text-gray-900">
-                                                {o.fullName}
-                                            </div>
+                                            <div className="truncate text-sm font-semibold text-gray-900">{o.fullName}</div>
 
                                             <div className="mt-1 text-xs text-gray-600">
-                                                <span className="font-medium text-gray-700">ID:</span>{" "}
-                                                {o.id}
+                                                <span className="font-medium text-gray-700">ID:</span> {o.id}
                                                 {o.city ? (
                                                     <>
                                                         {" "}
-                                                        •{" "}
-                                                        <span className="font-medium text-gray-700">
-                              City:
-                            </span>{" "}
-                                                        {o.city}
+                                                        • <span className="font-medium text-gray-700">City:</span> {o.city}
                                                     </>
                                                 ) : null}
                                             </div>
                                         </div>
 
-                                        <div className="text-xs text-gray-500">
-                                            {/* позже сюда добавим Edit/Delete */}
-                                        </div>
+                                        <div className="text-xs text-gray-500">{/* позже Edit/Delete */}</div>
                                     </div>
                                 </li>
                             ))}
@@ -111,12 +96,7 @@ export default function OrganizationsPage() {
                 </div>
             )}
 
-            {/* Create modal */}
-            <Modal
-                open={createOpen}
-                title="Create organization"
-                onClose={() => setCreateOpen(false)}
-            >
+            <Modal open={createOpen} title="Create organization" onClose={() => setCreateOpen(false)}>
                 <CreateOrganizationForm
                     onCancel={() => setCreateOpen(false)}
                     onCreated={async () => {
@@ -127,4 +107,4 @@ export default function OrganizationsPage() {
             </Modal>
         </div>
     );
-}
+};

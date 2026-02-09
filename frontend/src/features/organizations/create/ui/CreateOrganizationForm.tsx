@@ -1,9 +1,14 @@
 import { useState } from "react";
-import { organizationApi, type CreateOrganizationRequest } from "@/entities/organization/api/organizationApi";
+import { organizationApi } from "@/entities/organization/api/organizationApi";
 
 type Props = {
     onCreated: () => void;
     onCancel: () => void;
+};
+
+type CreateOrganizationRequest = {
+    fullName: string;
+    city?: string;
 };
 
 export const CreateOrganizationForm = ({ onCreated, onCancel }: Props) => {
@@ -30,11 +35,11 @@ export const CreateOrganizationForm = ({ onCreated, onCancel }: Props) => {
 
             await organizationApi.create({
                 fullName,
-                city: city.length ? city : null,
+                city: city.length ? city : undefined,
             });
 
             onCreated();
-        } catch (e) {
+        } catch (_err) {
             setError("Не удалось создать организацию.");
         } finally {
             setLoading(false);
@@ -53,7 +58,7 @@ export const CreateOrganizationForm = ({ onCreated, onCancel }: Props) => {
                 <label className="block text-xs font-medium text-gray-700">Full name</label>
                 <input
                     value={form.fullName}
-                    onChange={(e) => setForm((s) => ({ ...s, fullName: e.target.value }))}
+                    onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
                     placeholder="ООО ГОРСВЕТ"
                     className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400"
                 />
@@ -63,7 +68,7 @@ export const CreateOrganizationForm = ({ onCreated, onCancel }: Props) => {
                 <label className="block text-xs font-medium text-gray-700">City</label>
                 <input
                     value={form.city ?? ""}
-                    onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
+                    onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
                     placeholder="Riga"
                     className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400"
                 />

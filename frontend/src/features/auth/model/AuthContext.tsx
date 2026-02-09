@@ -1,47 +1,16 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext } from "react";
+import type { LoginRequest, MeResponse } from "../api/types";
 
-type AuthContextType = {
-    token: string | null;
-    isAuth: boolean;
-    login: (token: string) => void;
-    logout: () => void;
+export type AuthState = {
+    isReady: boolean;
+    isAuthenticated: boolean;
+    user: MeResponse | null;
 };
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export type AuthContextValue = AuthState & {
+    login: (dto: LoginRequest) => Promise<void>;
+    logout: () => void;
+    refreshMe: () => Promise<void>;
+};
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [token, setToken] = useState<string | null>(
-        localStorage.getItem("access_token")
-    );
-
-    const login = (newToken: string) => {
-        localStorage.setItem("access_token", newToken);
-        setToken(newToken);
-    };
-
-    const logout = () => {
-        localStorage.removeItem("access_token");
-        setToken(null);
-    };
-
-    return (
-        <AuthContext.Provider
-            value={{
-                token,
-                isAuth: Boolean(token),
-                login,
-                logout,
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
-}
-
-export function useAuth() {
-    const ctx = useContext(AuthContext);
-    if (!ctx) {
-        throw new Error("useAuth must be used inside AuthProvider");
-    }
-    return ctx;
-}
+export const AuthContext = createContext<AuthContextValue | null>(null);

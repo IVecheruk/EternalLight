@@ -1,8 +1,12 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/features/auth/model/AuthContext";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/features/auth/model/useAuth";
 
-export default function LoginPage() {
+type LocationState = {
+    from?: string;
+};
+
+export const LoginPage = () => {
     const { login } = useAuth();
     const nav = useNavigate();
     const location = useLocation();
@@ -12,21 +16,20 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const from = (location.state as any)?.from ?? "/";
+    const state = location.state as LocationState | null;
+    const from = state?.from ?? "/";
 
-    async function onSubmit(e: React.FormEvent) {
+    async function onSubmit(e: { preventDefault(): void }) {
         e.preventDefault();
         setError(null);
         setLoading(true);
+
         try {
-            await login(email, password);
+            await login({ email, password });
             nav(from, { replace: true });
-        } catch (err: any) {
+        } catch (err) {
             const msg =
-                err?.response?.data?.message ||
-                err?.response?.data?.error ||
-                err?.message ||
-                "Login failed";
+                err instanceof Error ? err.message : "Login failed";
             setError(msg);
         } finally {
             setLoading(false);
@@ -40,7 +43,11 @@ export default function LoginPage() {
             <form onSubmit={onSubmit}>
                 <div style={{ marginBottom: 12 }}>
                     <label>Email</label>
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: "100%" }} />
+                    <input
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        style={{ width: "100%" }}
+                    />
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
@@ -61,4 +68,4 @@ export default function LoginPage() {
             </form>
         </div>
     );
-}
+};

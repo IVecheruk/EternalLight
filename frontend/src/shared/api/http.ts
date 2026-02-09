@@ -1,28 +1,15 @@
 import axios from "axios";
-import { tokenStorage } from "../auth/tokenStorage";
 
 export const http = axios.create({
-    baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8080",
-    withCredentials: false,
+    baseURL: import.meta.env.VITE_API_URL,
 });
 
+// Подставляем Bearer token для всех запросов
 http.interceptors.request.use((config) => {
-    const token = tokenStorage.getAccess();
+    const token = localStorage.getItem("accessToken");
     if (token) {
         config.headers = config.headers ?? {};
-        config.headers.Authorization = `${tokenStorage.getType()} ${token}`;
+        config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
 });
-
-http.interceptors.response.use(
-    (res) => res,
-    (err) => {
-        if (err?.response?.status === 401) {
-            tokenStorage.clear();
-            // можно редиректить на /login если хочешь:
-            // window.location.href = "/login";
-        }
-        return Promise.reject(err);
-    }
-);

@@ -1,19 +1,20 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../model/AuthContext";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/features/auth/model/useAuth";
 
 export const ProtectedRoute = () => {
-    const { isLoading, isAuthed } = useAuth();
+    const { isReady, isAuthenticated } = useAuth();
+    const location = useLocation();
 
-    if (isLoading) {
+    if (!isReady) return <div className="text-sm text-gray-600">Loading...</div>;
+
+    if (!isAuthenticated) {
         return (
-            <div className="min-h-[50vh] flex items-center justify-center text-sm text-gray-600">
-                Loading…
-            </div>
+            <Navigate
+                to="/login"
+                replace
+                state={{ from: location.pathname + location.search }}
+            />
         );
-    }
-
-    if (!isAuthed) {
-        return <Navigate to="/login" replace />;
     }
 
     return <Outlet />;
