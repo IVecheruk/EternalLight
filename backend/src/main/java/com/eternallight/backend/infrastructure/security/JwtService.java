@@ -2,82 +2,66 @@ package com.eternallight.backend.infrastructure.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 
 @Service
-@RequiredArgsConstructor
 public class JwtService {
 
-    @Value("${security.jwt.secret}")
-    private String secretBase64;
+    private final SecretKey key;
+    private final long accessTtlSeconds;
 
-    @Value("${security.jwt.access-ttl-seconds:3600}")
-    private long accessTokenTtlSeconds;
-
-    private SecretKey secretKey;
-
-    @PostConstruct
-    void init() {
-        this.secretKey = Keys.hmacShaKeyFor(
-                java.util.Base64.getDecoder().decode(secretBase64)
-        );
+    public JwtService(
+            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.access-ttl-seconds:900}") long accessTtlSeconds
+    ) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.accessTtlSeconds = accessTtlSeconds;
     }
 
-    /* ======================
-       GENERATE TOKEN
-       ====================== */
-
+    // =========================
+    // TOKEN GENERATION
+    // =========================
     public String generateAccessToken(Long userId, String email, String role) {
         Instant now = Instant.now();
 
         return Jwts.builder()
-                .subject(String.valueOf(userId))
-                .claim("email", email)
-                .claim("role", role)
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(accessTokenTtlSeconds)))
-                .signWith(secretKey)
+                .setSubject(email)                 // subject = email
+                .claim("uid", userId)              // user id
+                .claim("role", role)               // role
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plusSeconds(accessTtlSeconds)))
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    /* ======================
-       PARSE / VALIDATE
-       ====================== */
-
-    public boolean isTokenValid(String token) {
-        try {
-            parseClaims(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public Long parseUserId(String token) {
-        return Long.parseLong(parseClaims(token).getSubject());
-    }
-
-    public String parseEmail(String token) {
-        return parseClaims(token).get("email", String.class);
-    }
-
-    public String parseRole(String token) {
-        return parseClaims(token).get("role", String.class);
-    }
-
-    private Claims parseClaims(String token) {
+    // =========================
+    // TOKEN PARSING
+    // =========================
+    public Claims parseClaims(String token) {
         return Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public String extractEmail(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+        return parseClaims(token).get("role", String.class);
+    }
+
+    public Long extractUserId(String token) {
+        return parseClaims(token).get("uid", Long.class);
     }
 }

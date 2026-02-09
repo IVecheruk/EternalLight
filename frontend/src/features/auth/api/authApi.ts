@@ -1,19 +1,22 @@
 import { http } from "@/shared/api/http";
 import type { LoginRequest, RegisterRequest, TokenResponse, MeResponse } from "./types";
 
+const BASE = "/api/v1/auth";
+
 export const authApi = {
-    async login(dto: LoginRequest): Promise<TokenResponse> {
-        const res = await http.post<TokenResponse>("/api/auth/login", dto);
-        return res.data;
-    },
+    login: (dto: LoginRequest) =>
+        http<TokenResponse>(`${BASE}/login`, {
+            method: "POST",
+            body: dto,
+            withAuth: false,
+        }),
 
-    async register(dto: RegisterRequest): Promise<TokenResponse> {
-        const res = await http.post<TokenResponse>("/api/auth/register", dto);
-        return res.data;
-    },
+    register: (dto: RegisterRequest) =>
+        http<TokenResponse>(`${BASE}/register`, {
+            method: "POST",
+            body: dto,
+            withAuth: false,
+        }),
 
-    async me(): Promise<MeResponse> {
-        const res = await http.get<MeResponse>("/api/auth/me");
-        return res.data;
-    },
+    me: () => http<MeResponse>(`${BASE}/me`, { method: "GET", withAuth: true }),
 };
