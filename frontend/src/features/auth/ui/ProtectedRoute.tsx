@@ -1,12 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/features/auth/model/useAuth";
+import { useAuth } from "../model/useAuth";
 
 export const ProtectedRoute = () => {
     const { isReady, isAuthenticated } = useAuth();
     const location = useLocation();
 
-    if (!isReady) return <div className="text-sm text-gray-600">Loading...</div>;
-
+    if (!isReady) return null; // можешь поставить лоадер
     if (!isAuthenticated) {
         return (
             <Navigate

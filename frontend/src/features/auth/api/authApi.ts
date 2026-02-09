@@ -7,14 +7,16 @@ export const authApi = {
     login: (dto: LoginRequest) =>
         http<TokenResponse>(`${BASE}/login`, {
             method: "POST",
-            data: dto,
+            body: JSON.stringify(dto),
+            auth: false,
         }),
 
     register: (dto: RegisterRequest) =>
         http<TokenResponse>(`${BASE}/register`, {
             method: "POST",
-            data: dto,
+            body: JSON.stringify(dto),
+            auth: false,
         }),
 
-    me: () => http<MeResponse>(`${BASE}/me`, { method: "GET" }),
+    me: () => http<MeResponse>(`${BASE}/me`, { method: "GET", auth: true }),
 };

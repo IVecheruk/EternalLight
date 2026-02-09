@@ -17,21 +17,20 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     }, []);
 
     const refreshMe = useCallback(async () => {
-        const token = localStorage.getItem(TOKEN_KEY);
+        const token = localStorage.getItem("accessToken");
         if (!token) {
-            setIsAuthenticated(false);
             setUser(null);
             return;
         }
-
         try {
             const me = await authApi.me();
             setUser(me);
-            setIsAuthenticated(true);
         } catch {
-            logout();
+            // если /me не пускает -> значит токен плохой/не отправился
+            localStorage.removeItem("accessToken");
+            setUser(null);
         }
-    }, [logout]);
+    }, []);
 
     const login = useCallback(
         async (dto: LoginRequest) => {

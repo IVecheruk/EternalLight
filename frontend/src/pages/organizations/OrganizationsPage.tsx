@@ -3,13 +3,17 @@ import { organizationApi } from "@/entities/organization/api/organizationApi";
 import type { Organization } from "@/entities/organization/model/types";
 import { Modal } from "@/shared/ui/Modal";
 import { CreateOrganizationForm } from "@/features/organizations/create/ui/CreateOrganizationForm";
+import { UpdateOrganizationForm } from "@/features/organizations/update/ui/UpdateOrganizationForm";
 
 export const OrganizationsPage = () => {
     const [items, setItems] = useState<Organization[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const [createOpen, setCreateOpen] = useState(false);
+
+    const [editOpen, setEditOpen] = useState(false);
+    const [selected, setSelected] = useState<Organization | null>(null);
 
     const load = async () => {
         setLoading(true);
@@ -26,10 +30,29 @@ export const OrganizationsPage = () => {
 
     useEffect(() => {
         void load();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const onEdit = (o: Organization) => {
+        setSelected(o);
+        setEditOpen(true);
+    };
+
+    const onDelete = async (o: Organization) => {
+        const ok = confirm(`Удалить организацию "${o.fullName}"?`);
+        if (!ok) return;
+
+        try {
+            await organizationApi.remove(o.id);
+            await load();
+        } catch {
+            setError("Не удалось удалить организацию.");
+        }
+    };
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <header className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                     <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Organizations</h1>
@@ -45,18 +68,21 @@ export const OrganizationsPage = () => {
                 </button>
             </header>
 
+            {/* Loading */}
             {loading && (
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-700">
                     Loading…
                 </div>
             )}
 
+            {/* Error */}
             {!loading && error && (
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">
                     {error}
                 </div>
             )}
 
+            {/* Content */}
             {!loading && !error && (
                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
                     <div className="border-b border-gray-200 px-5 py-3 text-sm font-medium text-gray-900">
@@ -74,7 +100,9 @@ export const OrganizationsPage = () => {
                                 <li key={o.id} className="px-5 py-4">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
-                                            <div className="truncate text-sm font-semibold text-gray-900">{o.fullName}</div>
+                                            <div className="truncate text-sm font-semibold text-gray-900">
+                                                {o.fullName}
+                                            </div>
 
                                             <div className="mt-1 text-xs text-gray-600">
                                                 <span className="font-medium text-gray-700">ID:</span> {o.id}
@@ -87,7 +115,23 @@ export const OrganizationsPage = () => {
                                             </div>
                                         </div>
 
-                                        <div className="text-xs text-gray-500">{/* позже Edit/Delete */}</div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+                                                onClick={() => onEdit(o)}
+                                            >
+                                                Edit
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className="rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-800 hover:bg-red-100"
+                                                onClick={() => void onDelete(o)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 </li>
                             ))}
@@ -96,6 +140,7 @@ export const OrganizationsPage = () => {
                 </div>
             )}
 
+            {/* Create modal */}
             <Modal open={createOpen} title="Create organization" onClose={() => setCreateOpen(false)}>
                 <CreateOrganizationForm
                     onCancel={() => setCreateOpen(false)}
@@ -104,6 +149,20 @@ export const OrganizationsPage = () => {
                         await load();
                     }}
                 />
+            </Modal>
+
+            {/* Edit modal */}
+            <Modal open={editOpen} title="Edit organization" onClose={() => setEditOpen(false)}>
+                {selected && (
+                    <UpdateOrganizationForm
+                        initial={selected}
+                        onCancel={() => setEditOpen(false)}
+                        onUpdated={async () => {
+                            setEditOpen(false);
+                            await load();
+                        }}
+                    />
+                )}
             </Modal>
         </div>
     );
