@@ -7,16 +7,14 @@ export const authApi = {
     login: (dto: LoginRequest) =>
         http<TokenResponse>(`${BASE}/login`, {
             method: "POST",
-            body: dto,
-            withAuth: false,
+            data: dto,
         }),
 
     register: (dto: RegisterRequest) =>
         http<TokenResponse>(`${BASE}/register`, {
             method: "POST",
-            body: dto,
-            withAuth: false,
+            data: dto,
         }),
 
-    me: () => http<MeResponse>(`${BASE}/me`, { method: "GET", withAuth: true }),
+    me: () => http<MeResponse>(`${BASE}/me`, { method: "GET" }),
 };

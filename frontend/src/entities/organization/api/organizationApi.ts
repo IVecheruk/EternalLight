@@ -1,23 +1,19 @@
 import { http } from "@/shared/api/http";
 import type { Organization } from "../model/types";
 
+const BASE = "/api/v1/organizations";
+
 export type CreateOrganizationRequest = {
     fullName: string;
     city?: string | null;
 };
 
 export const organizationApi = {
-    async list(): Promise<Organization[]> {
-        const res = await http.get<Organization[]>("/api/v1/organizations");
-        return res.data;
-    },
+    list: () => http<Organization[]>(BASE, { method: "GET" }),
 
-    async create(data: CreateOrganizationRequest): Promise<Organization> {
-        const res = await http.post<Organization>("/api/v1/organizations", data);
-        return res.data;
-    },
+    create: (data: CreateOrganizationRequest) =>
+        http<Organization>(BASE, { method: "POST", data }),
 
-    async remove(id: number): Promise<void> {
-        await http.delete(`/api/v1/organizations/${id}`);
-    },
+    remove: (id: number) =>
+        http<void>(`${BASE}/${id}`, { method: "DELETE" }),
 };

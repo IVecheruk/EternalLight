@@ -1,22 +1,13 @@
 import { useState } from "react";
-import { organizationApi } from "@/entities/organization/api/organizationApi";
+import { organizationApi, type CreateOrganizationRequest } from "@/entities/organization/api/organizationApi";
 
 type Props = {
     onCreated: () => void;
     onCancel: () => void;
 };
 
-type CreateOrganizationRequest = {
-    fullName: string;
-    city?: string;
-};
-
 export const CreateOrganizationForm = ({ onCreated, onCancel }: Props) => {
-    const [form, setForm] = useState<CreateOrganizationRequest>({
-        fullName: "",
-        city: "",
-    });
-
+    const [form, setForm] = useState<CreateOrganizationRequest>({ fullName: "", city: "" });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -35,11 +26,11 @@ export const CreateOrganizationForm = ({ onCreated, onCancel }: Props) => {
 
             await organizationApi.create({
                 fullName,
-                city: city.length ? city : undefined,
+                city: city.length ? city : null,
             });
 
             onCreated();
-        } catch (_err) {
+        } catch {
             setError("Не удалось создать организацию.");
         } finally {
             setLoading(false);
