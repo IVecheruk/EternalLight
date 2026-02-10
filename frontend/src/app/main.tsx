@@ -5,7 +5,7 @@ import { router } from "@/app/routes";
 import { AuthProvider } from "@/features/auth/model/AuthProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 
-import "./styles/index.css";
+import "@/app/styles/index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

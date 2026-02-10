@@ -1,38 +1,45 @@
-import axios from "axios";
 import type { Organization } from "../model/types";
-
-const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
-    withCredentials: false,
-});
+import { organizationMockRepo } from "../mock/organizationMockRepo";
+import { http } from "@/shared/api/http";
 
 export type CreateOrganizationRequest = {
     fullName: string;
-    city?: string | null;
+    city: string | null;
 };
 
 export type UpdateOrganizationRequest = {
     fullName: string;
-    city?: string | null;
+    city: string | null;
 };
+
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 
 export const organizationApi = {
     async list(): Promise<Organization[]> {
-        const res = await api.get("/api/v1/organizations");
-        return res.data;
+        if (USE_MOCK) return organizationMockRepo.list();
+        return http<Organization[]>("/api/v1/organizations", { auth: true });
     },
 
     async create(data: CreateOrganizationRequest): Promise<Organization> {
-        const res = await api.post("/api/v1/organizations", data);
-        return res.data;
+        if (USE_MOCK) return organizationMockRepo.create(data);
+        return http<Organization>("/api/v1/organizations", {
+            method: "POST",
+            auth: true,
+            body: JSON.stringify(data),
+        });
     },
 
     async update(id: number, data: UpdateOrganizationRequest): Promise<Organization> {
-        const res = await api.put(`/api/v1/organizations/${id}`, data);
-        return res.data;
+        if (USE_MOCK) return organizationMockRepo.update(id, data);
+        return http<Organization>(`/api/v1/organizations/${id}`, {
+            method: "PUT",
+            auth: true,
+            body: JSON.stringify(data),
+        });
     },
 
     async remove(id: number): Promise<void> {
-        await api.delete(`/api/v1/organizations/${id}`);
+        if (USE_MOCK) return organizationMockRepo.remove(id);
+        await http<void>(`/api/v1/organizations/${id}`, { method: "DELETE", auth: true });
     },
 };

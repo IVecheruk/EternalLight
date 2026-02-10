@@ -1,18 +1,25 @@
 import { Link } from "react-router-dom";
+import { PageHeader } from "@/shared/ui/PageHeader";
 import { PageShell } from "@/shared/ui/PageShell";
+import { EmptyState } from "@/shared/ui/EmptyState";
 
-export const NotFoundPage = () => {
+export function NotFoundPage() {
     return (
-        <PageShell title="404" description="Страница не найдена.">
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-700">
-                <div className="mb-4">Такого маршрута нет.</div>
-                <Link
-                    to="/"
-                    className="inline-flex rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
-                >
-                    Go Home
-                </Link>
-            </div>
+        <PageShell>
+            <PageHeader title="404" description="Такой страницы нет." />
+
+            <EmptyState
+                title="Страница не найдена"
+                description="Проверь адрес или вернись на главную."
+                action={
+                    <Link
+                        to="/"
+                        className="inline-flex rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 dark:bg-neutral-100 dark:text-neutral-900"
+                    >
+                        Go to Home
+                    </Link>
+                }
+            />
         </PageShell>
     );
-};
+}

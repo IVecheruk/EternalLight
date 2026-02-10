@@ -1,13 +1,19 @@
 import { createContext } from "react";
-import type { LoginRequest, MeResponse } from "../api/types";
 
-export type AuthState = {
+export type MeResponse = {
+    email: string;
+    role?: string;
+};
+
+export type LoginRequest = {
+    email: string;
+    password: string;
+};
+
+export type AuthContextValue = {
     isReady: boolean;
     isAuthenticated: boolean;
     user: MeResponse | null;
-};
-
-export type AuthContextValue = AuthState & {
     login: (dto: LoginRequest) => Promise<void>;
     logout: () => void;
     refreshMe: () => Promise<void>;

@@ -5,7 +5,16 @@ type HttpOptions = {
     headers?: Record<string, string>;
 };
 
-const TOKEN_KEY = "accessToken";
+export class HttpError extends Error {
+    status: number;
+    data: any;
+
+    constructor(status: number, message: string, data?: any) {
+        super(message);
+        this.status = status;
+        this.data = data;
+    }
+}
 
 export async function http<T>(url: string, options: HttpOptions = {}): Promise<T> {
     const method = options.method ?? "GET";
@@ -16,7 +25,7 @@ export async function http<T>(url: string, options: HttpOptions = {}): Promise<T
     };
 
     if (options.auth) {
-        const token = localStorage.getItem(TOKEN_KEY);
+        const token = localStorage.getItem("accessToken");
         if (token) headers.Authorization = `Bearer ${token}`;
     }
 
@@ -26,19 +35,15 @@ export async function http<T>(url: string, options: HttpOptions = {}): Promise<T
         body: options.body,
     });
 
-    if (res.status === 204) return null as T;
-
     const text = await res.text();
-    let data: any = null;
-    try {
-        data = text ? JSON.parse(text) : null;
-    } catch {
-        data = text;
-    }
+    const data = text ? JSON.parse(text) : null;
 
     if (!res.ok) {
-        const msg = data?.message || data?.error || `Request failed with status code ${res.status}`;
-        throw new Error(msg);
+        const msg =
+            data?.message ||
+            data?.error ||
+            `Request failed with status code ${res.status}`;
+        throw new HttpError(res.status, msg, data);
     }
 
     return data as T;
