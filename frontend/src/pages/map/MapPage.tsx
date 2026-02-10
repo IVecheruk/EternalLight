@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import Map, { Marker, Popup } from "react-map-gl/maplibre";
+import Map, { Popup, Source, Layer } from "react-map-gl/maplibre";
+import type { FeatureCollection, Point } from "geojson";
+
 import { mapApi } from "@/entities/map/api/mapApi";
 import type { MapDataResponse, MapPoint } from "@/entities/map/model/types";
 import { useTheme } from "@/app/theme/ThemeProvider";
 
 type RangePreset = "1h" | "24h" | "7d";
+type ViewMode = "heatmap" | "points" | "both";
 
 function rangeToDates(preset: RangePreset) {
     const to = new Date();
@@ -17,25 +20,12 @@ function rangeToDates(preset: RangePreset) {
     return { from: from.toISOString(), to: to.toISOString() };
 }
 
-function statusColor(s: MapPoint["status"]) {
-    switch (s) {
-        case "OK":
-            return "#22c55e";
-        case "WARN":
-            return "#f59e0b";
-        case "OFF":
-            return "#64748b";
-        case "FAULT":
-            return "#ef4444";
-        default:
-            return "#0f172a";
-    }
-}
-
 export function MapPage() {
     const { theme } = useTheme();
 
     const [preset, setPreset] = useState<RangePreset>("1h");
+    const [mode, setMode] = useState<ViewMode>("both");
+
     const [data, setData] = useState<MapDataResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -63,7 +53,7 @@ export function MapPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preset]);
 
-    // ✅ Барнаул (lng/lat)
+    // ✅ Барнаул
     const initialViewState = useMemo(
         () => ({
             longitude: 83.7636,
@@ -73,13 +63,156 @@ export function MapPage() {
         []
     );
 
-    // ✅ НОРМАЛЬНЫЕ стили (есть дороги/здания/подписи)
-    // Light/Dark переключаем по theme
+    // ✅ Под тему
     const mapStyle = useMemo(() => {
         return theme === "dark"
             ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
             : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
     }, [theme]);
+
+    // --- GeoJSON из точек ---
+    const geojson: FeatureCollection<Point, any> = useMemo(() => {
+        const points = data?.points ?? [];
+        return {
+            type: "FeatureCollection",
+            features: points.map((p) => ({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [p.lng, p.lat],
+                },
+                properties: {
+                    id: p.id,
+                    name: p.name,
+                    status: p.status,
+                    loadKw: p.loadKw,
+                    loadPct: p.loadPct,
+                    updatedAt: p.updatedAt,
+                    // weight для heatmap: чем выше, тем "горячее"
+                    // можно менять на loadPct, если хочешь
+                    weight: p.loadKw,
+                },
+            })),
+        };
+    }, [data]);
+
+    // Находим max load для нормализации (чтобы heatmap был адекватным)
+    const maxKw = useMemo(() => {
+        const arr = data?.points?.map((p) => p.loadKw) ?? [];
+        const m = arr.length ? Math.max(...arr) : 1;
+        return m > 0 ? m : 1;
+    }, [data]);
+
+    // --- Слои ---
+    const heatmapLayer: Layer = useMemo(
+        () => ({
+            id: "heat",
+            type: "heatmap",
+            source: "points",
+            maxzoom: 16,
+            paint: {
+                // Вес точки
+                "heatmap-weight": [
+                    "interpolate",
+                    ["linear"],
+                    ["get", "weight"],
+                    0,
+                    0,
+                    maxKw,
+                    1,
+                ],
+
+                // Интенсивность по зуму
+                "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 10, 1, 14, 2.5],
+
+                // Радиус "расплывания" по зуму
+                "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 18, 14, 40],
+
+                // Прозрачность (чтобы не забивала всё)
+                "heatmap-opacity": mode === "points" ? 0 : 0.85,
+
+                // Градиент цвета heatmap
+                "heatmap-color": [
+                    "interpolate",
+                    ["linear"],
+                    ["heatmap-density"],
+                    0,
+                    "rgba(0,0,0,0)",
+                    0.2,
+                    "rgba(34,197,94,0.55)", // green
+                    0.45,
+                    "rgba(245,158,11,0.65)", // amber
+                    0.7,
+                    "rgba(239,68,68,0.75)", // red
+                    1,
+                    "rgba(220,38,38,0.9)", // deep red
+                ],
+            },
+        }),
+        [maxKw, mode]
+    );
+
+    const circleLayer: Layer = useMemo(
+        () => ({
+            id: "circles",
+            type: "circle",
+            source: "points",
+            paint: {
+                // Радиус по нагрузке
+                "circle-radius": [
+                    "interpolate",
+                    ["linear"],
+                    ["get", "loadPct"],
+                    0,
+                    4,
+                    100,
+                    10,
+                ],
+                // Цвет по статусу
+                "circle-color": [
+                    "match",
+                    ["get", "status"],
+                    "OK",
+                    "#22c55e",
+                    "WARN",
+                    "#f59e0b",
+                    "OFF",
+                    "#64748b",
+                    "FAULT",
+                    "#ef4444",
+                    "#0f172a",
+                ],
+                "circle-opacity": mode === "heatmap" ? 0 : 0.85,
+                "circle-stroke-color": "rgba(255,255,255,0.9)",
+                "circle-stroke-width": 2,
+            },
+        }),
+        [mode]
+    );
+
+    // Клик по карте: достаём feature и открываем popup
+    const onMapClick = (e: any) => {
+        // если кликнули по кругам - там будут features
+        const f = e?.features?.[0];
+        if (!f) {
+            setActive(null);
+            return;
+        }
+
+        // приводим к MapPoint (минимально нужное)
+        const p: MapPoint = {
+            id: f.properties.id,
+            name: f.properties.name,
+            status: f.properties.status,
+            loadKw: Number(f.properties.loadKw),
+            loadPct: Number(f.properties.loadPct),
+            updatedAt: f.properties.updatedAt,
+            lat: e.lngLat.lat,
+            lng: e.lngLat.lng,
+        };
+
+        setActive(p);
+    };
 
     return (
         <div className="space-y-4">
@@ -88,11 +221,11 @@ export function MapPage() {
                 <div className="space-y-1">
                     <h1 className="text-2xl font-semibold tracking-tight">Map</h1>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                        Нагрузка на освещение (mock). Сейчас точки из mapApi, позже заменим на backend агрегации.
+                        Heatmap нагрузки освещения (mock). Источник данных: mapApi.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <select
                         value={preset}
                         onChange={(e) => setPreset(e.target.value as RangePreset)}
@@ -101,6 +234,16 @@ export function MapPage() {
                         <option value="1h">Last 1 hour</option>
                         <option value="24h">Last 24 hours</option>
                         <option value="7d">Last 7 days</option>
+                    </select>
+
+                    <select
+                        value={mode}
+                        onChange={(e) => setMode(e.target.value as ViewMode)}
+                        className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950"
+                    >
+                        <option value="both">Heatmap + Points</option>
+                        <option value="heatmap">Heatmap only</option>
+                        <option value="points">Points only</option>
                     </select>
 
                     <button
@@ -114,33 +257,6 @@ export function MapPage() {
                 </div>
             </div>
 
-            {/* Summary */}
-            {data && (
-                <div className="grid gap-3 md:grid-cols-4">
-                    <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
-                        <div className="text-xs font-semibold text-neutral-500">Points</div>
-                        <div className="mt-1 text-xl font-semibold">{data.summary.points}</div>
-                    </div>
-
-                    <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
-                        <div className="text-xs font-semibold text-neutral-500">Faults</div>
-                        <div className="mt-1 text-xl font-semibold">{data.summary.faults}</div>
-                    </div>
-
-                    <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
-                        <div className="text-xs font-semibold text-neutral-500">Total kW</div>
-                        <div className="mt-1 text-xl font-semibold">{data.summary.totalKw}</div>
-                    </div>
-
-                    <div className="rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
-                        <div className="text-xs font-semibold text-neutral-500">Range</div>
-                        <div className="mt-1 text-sm text-neutral-700 dark:text-neutral-300">
-                            {new Date(data.summary.from).toLocaleString()} → {new Date(data.summary.to).toLocaleString()}
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {error && (
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                     {error}
@@ -150,19 +266,9 @@ export function MapPage() {
             {/* Map */}
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-                    <div className="text-sm font-medium">Barnaul map</div>
-
-                    {/* Legend */}
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-700 dark:text-neutral-300">
-                        {(["OK", "WARN", "OFF", "FAULT"] as const).map((s) => (
-                            <div key={s} className="flex items-center gap-2">
-                <span
-                    className="inline-block h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: statusColor(s) }}
-                />
-                                {s}
-                            </div>
-                        ))}
+                    <div className="text-sm font-medium">Barnaul heatmap</div>
+                    <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                        Tip: кликни по точке (circle), чтобы открыть popup.
                     </div>
                 </div>
 
@@ -171,36 +277,16 @@ export function MapPage() {
                         initialViewState={initialViewState}
                         mapStyle={mapStyle}
                         style={{ width: "100%", height: "100%" }}
-                        onClick={() => setActive(null)}
+                        interactiveLayerIds={mode === "heatmap" ? [] : ["circles"]} // ✅ кликабельны круги
+                        onClick={onMapClick}
                         attributionControl
                     >
-                        {(data?.points ?? []).map((p) => {
-                            const size = 10 + Math.round(p.loadPct / 10); // 10..20
-
-                            return (
-                                <Marker key={p.id} longitude={p.lng} latitude={p.lat} anchor="center">
-                                    {/* ✅ Кликаем по marker без originalEvent -> TS ок */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setActive(p);
-                                        }}
-                                        title={p.name}
-                                        style={{
-                                            width: size,
-                                            height: size,
-                                            borderRadius: 999,
-                                            backgroundColor: statusColor(p.status),
-                                            opacity: 0.85,
-                                            border: "2px solid rgba(255,255,255,0.9)",
-                                            boxShadow: "0 1px 8px rgba(0,0,0,0.15)",
-                                            cursor: "pointer",
-                                        }}
-                                    />
-                                </Marker>
-                            );
-                        })}
+                        <Source id="points" type="geojson" data={geojson}>
+                            {/* heatmap снизу */}
+                            <Layer {...heatmapLayer} />
+                            {/* circles сверху */}
+                            <Layer {...circleLayer} />
+                        </Source>
 
                         {active && (
                             <Popup
