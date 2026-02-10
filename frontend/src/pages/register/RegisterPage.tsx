@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/model/useAuth";
+import type { Role } from "@/features/auth/model/AuthContext";
+
+const roleOptions: { value: Role; label: string }[] = [
+    { value: "SUPER_ADMIN", label: "SUPER_ADMIN" },
+    { value: "ORG_ADMIN", label: "ORG_ADMIN" },
+    { value: "DISPATCHER", label: "DISPATCHER" },
+    { value: "TECHNICIAN", label: "TECHNICIAN" },
+];
 
 export function RegisterPage() {
     const { register } = useAuth();
@@ -9,6 +17,7 @@ export function RegisterPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [role, setRole] = useState<Role>("TECHNICIAN");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -22,7 +31,7 @@ export function RegisterPage() {
         try {
             setLoading(true);
             setError(null);
-            await register({ email: trimmedEmail, password });
+            await register({ email: trimmedEmail, password, role });
             navigate("/profile", { replace: true });
         } catch (e) {
             setError(e instanceof Error ? e.message : "Registration failed");
@@ -52,6 +61,21 @@ export function RegisterPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                 />
+            </label>
+
+            <label className="block space-y-2">
+                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Role</span>
+                <select
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as Role)}
+                >
+                    {roleOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
             </label>
 
             <label className="block space-y-2">

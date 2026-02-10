@@ -18,10 +18,10 @@ export function HomePage() {
 
                     <div className="flex flex-wrap gap-3 pt-2">
                         <Link
-                            to="/organizations"
+                            to="/map"
                             className="rounded-xl bg-black px-5 py-3 text-sm font-medium text-white shadow-sm hover:opacity-90"
                         >
-                            Open Organizations
+                            Open Map
                         </Link>
                         <Link
                             to="/acts"

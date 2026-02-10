@@ -90,7 +90,7 @@ export const router = createBrowserRouter([
             {
                 path: "admin/organizations",
                 element: (
-                    <RoleGuard roles={["SUPER_ADMIN", "ADMIN"]}>
+                    <RoleGuard roles={["SUPER_ADMIN", "ORG_ADMIN"]}>
                         <AdminOrganizationsPage />
                     </RoleGuard>
                 ),
@@ -98,7 +98,7 @@ export const router = createBrowserRouter([
             {
                 path: "admin/users",
                 element: (
-                    <RoleGuard roles={["SUPER_ADMIN", "ADMIN"]}>
+                    <RoleGuard roles={["SUPER_ADMIN", "ORG_ADMIN"]}>
                         <AdminUsersPage />
                     </RoleGuard>
                 ),

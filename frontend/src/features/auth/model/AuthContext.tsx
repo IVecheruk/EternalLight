@@ -5,6 +5,8 @@ export type MeResponse = {
     authorities?: string;
 };
 
+export type Role = "SUPER_ADMIN" | "ORG_ADMIN" | "DISPATCHER" | "TECHNICIAN";
+
 export type LoginRequest = {
     email: string;
     password: string;
@@ -13,6 +15,7 @@ export type LoginRequest = {
 export type RegisterRequest = {
     email: string;
     password: string;
+    role: Role;
 };
 
 export type AuthContextValue = {
