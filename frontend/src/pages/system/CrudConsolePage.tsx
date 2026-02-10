@@ -19,16 +19,61 @@ const resources: Resource[] = [
     { key: "faultTypes", label: "Fault types", endpoint: "/api/v1/fault-types" },
     { key: "uoms", label: "Units of measure", endpoint: "/api/v1/uoms" },
     { key: "employees", label: "Employees", endpoint: "/api/v1/employees" },
-    { key: "equipmentConditions", label: "Equipment conditions", endpoint: "/api/v1/equipment-conditions", readOnly: true },
+    {
+        key: "equipmentConditions",
+        label: "Equipment conditions",
+        endpoint: "/api/v1/equipment-conditions",
+        readOnly: true,
+    },
+    {
+        key: "workActBasis",
+        label: "Work act basis (set workActId in endpoint)",
+        endpoint: "/api/v1/work-acts/1/basis",
+    },
+    {
+        key: "workActFaults",
+        label: "Work act faults (set workActId in endpoint)",
+        endpoint: "/api/v1/work-acts/1/faults",
+    },
+    {
+        key: "workActBrigade",
+        label: "Work act brigade (set workActId in endpoint)",
+        endpoint: "/api/v1/work-acts/1/brigade",
+    },
+    {
+        key: "workActMaterials",
+        label: "Work act materials (set workActId in endpoint)",
+        endpoint: "/api/v1/work-acts/1/materials",
+    },
+    {
+        key: "workActLabor",
+        label: "Work act labor items (set workActId in endpoint)",
+        endpoint: "/api/v1/work-acts/1/labor-items",
+    },
 ];
 
 function pretty(value: unknown): string {
     return JSON.stringify(value, null, 2);
 }
 
+function joinUrl(endpoint: string, id?: string, query?: string) {
+    const cleanEndpoint = endpoint.trim();
+    const cleanId = id?.trim();
+    const cleanQuery = query?.trim();
+
+    const withId = cleanId ? `${cleanEndpoint}/${cleanId}` : cleanEndpoint;
+    if (!cleanQuery) return withId;
+
+    const q = cleanQuery.startsWith("?") ? cleanQuery.slice(1) : cleanQuery;
+    return `${withId}?${q}`;
+}
+
 export function CrudConsolePage() {
     const [resourceKey, setResourceKey] = useState(resources[0].key);
+    const [endpoint, setEndpoint] = useState(resources[0].endpoint);
+    const [query, setQuery] = useState("");
     const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+    const [responseBody, setResponseBody] = useState<unknown>(null);
     const [selectedId, setSelectedId] = useState<string>("");
     const [payload, setPayload] = useState<string>("{}\n");
     const [loading, setLoading] = useState(false);
@@ -40,12 +85,28 @@ export function CrudConsolePage() {
         [resourceKey]
     );
 
+    const setResource = (nextKey: string) => {
+        setResourceKey(nextKey);
+        const next = resources.find((r) => r.key === nextKey);
+        if (!next) return;
+        setEndpoint(next.endpoint);
+        setQuery(next.key === "workActs" ? "page=0&size=20" : "");
+        setSelectedId("");
+        setRows([]);
+        setResponseBody(null);
+        setError(null);
+        setMessage(null);
+    };
+
     const load = async () => {
         setLoading(true);
         setError(null);
         setMessage(null);
         try {
-            const data = await http<unknown>(resource.endpoint, { auth: true });
+            const url = joinUrl(endpoint, undefined, query);
+            const data = await http<unknown>(url, { auth: true });
+            setResponseBody(data);
+
             if (Array.isArray(data)) {
                 setRows(data as Record<string, unknown>[]);
                 setMessage(`Loaded ${data.length} records.`);
@@ -60,10 +121,32 @@ export function CrudConsolePage() {
             }
 
             setRows([]);
-            setMessage("Response is not a list. Check endpoint specifics.");
+            setMessage("Loaded object response.");
         } catch (e: any) {
             setRows([]);
+            setResponseBody(null);
             setError(e?.message ?? "Load failed");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getById = async () => {
+        if (!selectedId.trim()) {
+            setError("Set ID for GET by id");
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        setMessage(null);
+        try {
+            const data = await http<unknown>(joinUrl(endpoint, selectedId, query), { auth: true });
+            setResponseBody(data);
+            setRows([]);
+            setMessage("Loaded entity by id.");
+        } catch (e: any) {
+            setError(e?.message ?? "GET by id failed");
         } finally {
             setLoading(false);
         }
@@ -84,12 +167,13 @@ export function CrudConsolePage() {
         setMessage(null);
         try {
             const body = parsePayload();
-            const created = await http<unknown>(resource.endpoint, {
+            const created = await http<unknown>(joinUrl(endpoint, undefined, query), {
                 method: "POST",
                 auth: true,
                 body: JSON.stringify(body),
             });
-            setMessage(`Created: ${pretty(created)}`);
+            setResponseBody(created);
+            setMessage(`Created entity.`);
             await load();
         } catch (e: any) {
             setError(e?.message ?? "Create failed");
@@ -109,12 +193,13 @@ export function CrudConsolePage() {
         setMessage(null);
         try {
             const body = parsePayload();
-            const updated = await http<unknown>(`${resource.endpoint}/${selectedId.trim()}`, {
+            const updated = await http<unknown>(joinUrl(endpoint, selectedId, query), {
                 method: "PUT",
                 auth: true,
                 body: JSON.stringify(body),
             });
-            setMessage(`Updated: ${pretty(updated)}`);
+            setResponseBody(updated);
+            setMessage("Updated entity.");
             await load();
         } catch (e: any) {
             setError(e?.message ?? "Update failed");
@@ -133,10 +218,11 @@ export function CrudConsolePage() {
         setError(null);
         setMessage(null);
         try {
-            await http<void>(`${resource.endpoint}/${selectedId.trim()}`, {
+            await http<void>(joinUrl(endpoint, selectedId, query), {
                 method: "DELETE",
                 auth: true,
             });
+            setResponseBody({ deletedId: selectedId.trim() });
             setMessage(`Deleted id=${selectedId.trim()}`);
             await load();
         } catch (e: any) {
@@ -151,40 +237,70 @@ export function CrudConsolePage() {
             <header className="space-y-2">
                 <h1 className="text-2xl font-semibold tracking-tight">CRUD Console</h1>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                    Единая страница для базового CRUD по backend ресурсам.
+                    Единая рабочая страница для backend CRUD и nested endpoints.
                 </p>
             </header>
 
-            <div className="grid gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 md:grid-cols-[1fr_220px_auto_auto_auto]">
-                <select
-                    className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                    value={resourceKey}
-                    onChange={(e) => setResourceKey(e.target.value)}
-                >
-                    {resources.map((r) => (
-                        <option key={r.key} value={r.key}>
-                            {r.label}
-                        </option>
-                    ))}
-                </select>
-                <input
-                    className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                    placeholder="ID for update/delete"
-                    value={selectedId}
-                    onChange={(e) => setSelectedId(e.target.value)}
-                />
-                <button type="button" onClick={() => void load()} className="rounded-xl border px-4 py-2 text-sm">
-                    Load
-                </button>
-                <button
-                    type="button"
-                    disabled={resource.readOnly}
-                    onClick={() => void createItem()}
-                    className="rounded-xl border px-4 py-2 text-sm disabled:opacity-50"
-                >
-                    Create
-                </button>
-                <div className="flex gap-2">
+            <div className="grid gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 md:grid-cols-2">
+                <label className="space-y-1 text-xs">
+                    <span>Resource preset</span>
+                    <select
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                        value={resourceKey}
+                        onChange={(e) => setResource(e.target.value)}
+                    >
+                        {resources.map((r) => (
+                            <option key={r.key} value={r.key}>
+                                {r.label}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+
+                <label className="space-y-1 text-xs">
+                    <span>Endpoint (editable)</span>
+                    <input
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                        value={endpoint}
+                        onChange={(e) => setEndpoint(e.target.value)}
+                    />
+                </label>
+
+                <label className="space-y-1 text-xs">
+                    <span>Query string</span>
+                    <input
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                        placeholder="page=0&size=20"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                    />
+                </label>
+
+                <label className="space-y-1 text-xs">
+                    <span>ID (for GET/PUT/DELETE)</span>
+                    <input
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                        placeholder="resource id"
+                        value={selectedId}
+                        onChange={(e) => setSelectedId(e.target.value)}
+                    />
+                </label>
+
+                <div className="col-span-full flex flex-wrap gap-2">
+                    <button type="button" onClick={() => void load()} className="rounded-xl border px-4 py-2 text-sm">
+                        Load list
+                    </button>
+                    <button type="button" onClick={() => void getById()} className="rounded-xl border px-4 py-2 text-sm">
+                        Get by ID
+                    </button>
+                    <button
+                        type="button"
+                        disabled={resource.readOnly}
+                        onClick={() => void createItem()}
+                        className="rounded-xl border px-4 py-2 text-sm disabled:opacity-50"
+                    >
+                        Create
+                    </button>
                     <button
                         type="button"
                         disabled={resource.readOnly}
@@ -212,19 +328,27 @@ export function CrudConsolePage() {
                         value={payload}
                         onChange={(e) => setPayload(e.target.value)}
                     />
-                    <div className="text-xs text-neutral-500">Endpoint: {resource.endpoint}</div>
                 </div>
 
                 <div className="space-y-2">
-                    <div className="text-sm font-medium">Response list</div>
+                    <div className="text-sm font-medium">List response</div>
                     <pre className="h-80 overflow-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs dark:border-neutral-700 dark:bg-neutral-900">
                         {pretty(rows)}
                     </pre>
                 </div>
             </div>
 
+            <div className="space-y-2">
+                <div className="text-sm font-medium">Raw response</div>
+                <pre className="max-h-80 overflow-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs dark:border-neutral-700 dark:bg-neutral-900">
+                    {pretty(responseBody)}
+                </pre>
+            </div>
+
             {loading ? <div className="text-sm">Loading...</div> : null}
-            {message ? <div className="rounded-xl border border-green-300 bg-green-50 p-3 text-sm text-green-800">{message}</div> : null}
+            {message ? (
+                <div className="rounded-xl border border-green-300 bg-green-50 p-3 text-sm text-green-800">{message}</div>
+            ) : null}
             {error ? <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
         </div>
     );

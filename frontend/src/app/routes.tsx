@@ -122,7 +122,7 @@ export const router = createBrowserRouter([
                 ),
             },
             { path: "home", element: <Navigate to="/" replace /> },
-                        { path: "maps", element: <Navigate to="/map" replace /> },
+            { path: "maps", element: <Navigate to="/map" replace /> },
             { path: "*", element: <NotFoundPage /> },
         ],
     },
