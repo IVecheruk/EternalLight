@@ -27,6 +27,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         setUser(null);
     }, []);
 
+    /**
+     * tolerant режим: если /me недоступен, но токен есть — не выбрасываем пользователя
+     * из сессии (backend может быть в промежуточной конфигурации).
+     */
     const refreshMe = useCallback(async () => {
         const token = localStorage.getItem(TOKEN_KEY);
         if (!token) {
@@ -34,6 +38,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             setIsAuthenticated(false);
             return;
         }
+
         try {
             const me = await authApi.me();
             setUser(me);
@@ -60,6 +65,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             const res = await authApi.login(dto);
             localStorage.setItem(TOKEN_KEY, res.token);
             setIsAuthenticated(true);
+            setUser({ email: dto.email });
             await refreshMe();
         },
         [refreshMe]
