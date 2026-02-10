@@ -23,6 +23,7 @@ function toQuery(params: ListParams): string {
 
 export const workActApi = {
     list: (params: ListParams) => http<WorkActPage>(`${BASE}?${toQuery(params)}`, { auth: true }),
+    get: (id: number) => http<WorkAct>(`${BASE}/${id}`, { auth: true }),
     create: (data: WorkActUpsertRequest) =>
         http<WorkAct>(BASE, {
             method: "POST",

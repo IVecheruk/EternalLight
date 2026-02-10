@@ -10,7 +10,6 @@ import { DistrictsPage } from "@/pages/districts/DistrictsPage";
 import { StreetsPage } from "@/pages/streets/StreetsPage";
 import { LightingObjectsPage } from "@/pages/lighting-objects/LightingObjectsPage";
 import { ActsPage } from "@/pages/acts/ActsPage";
-import { MapPage } from "@/pages/map/MapPage";
 import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
 import { RequireAuth } from "@/features/auth/ui/RequireAuth";
 import { RoleGuard } from "@/features/permissions/ui/RoleGuard";
@@ -89,14 +88,6 @@ export const router = createBrowserRouter([
                 ),
             },
             {
-                path: "map",
-                element: (
-                    <RequireAuth>
-                        <MapPage />
-                    </RequireAuth>
-                ),
-            },
-            {
                 path: "admin/organizations",
                 element: (
                     <RoleGuard roles={["SUPER_ADMIN", "ADMIN"]}>
@@ -113,7 +104,8 @@ export const router = createBrowserRouter([
                 ),
             },
             { path: "home", element: <Navigate to="/" replace /> },
-            { path: "maps", element: <Navigate to="/map" replace /> },
+            { path: "map", element: <Navigate to="/" replace /> },
+            { path: "maps", element: <Navigate to="/" replace /> },
             { path: "*", element: <NotFoundPage /> },
         ],
     },
