@@ -4,12 +4,10 @@ import { http } from "@/shared/api/http";
 
 export type CreateStreetRequest = {
     name: string;
-    districtId: number | null;
 };
 
 export type UpdateStreetRequest = {
     name: string;
-    districtId: number | null;
 };
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";

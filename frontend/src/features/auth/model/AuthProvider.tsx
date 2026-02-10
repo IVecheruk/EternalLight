@@ -1,15 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "./AuthContext";
-import type { LoginRequest } from "./AuthContext";
+import type { LoginRequest, RegisterRequest } from "./AuthContext";
 import { authApi } from "../api/authApi";
 import type { MeResponse } from "../api/types";
 
 const TOKEN_KEY = "accessToken";
 
-/**
- * Важно: даже если backend сейчас даёт 403/400 — фронт не должен падать.
- * Он просто будет считать юзера гостем и жить дальше.
- */
+function parseAuthorities(raw?: string): string[] {
+    if (!raw) return [];
+    return raw
+        .replace(/[[\]]/g, "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => s.replace(/^ROLE_/, "").toUpperCase());
+}
+
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     const [isReady, setIsReady] = useState(false);
     const [user, setUser] = useState<MeResponse | null>(null);
@@ -21,6 +27,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         setUser(null);
     }, []);
 
+    /**
+     * tolerant режим: если /me недоступен, но токен есть — не выбрасываем пользователя
+     * из сессии (backend может быть в промежуточной конфигурации).
+     */
     const refreshMe = useCallback(async () => {
         const token = localStorage.getItem(TOKEN_KEY);
         if (!token) {
@@ -28,23 +38,35 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             setIsAuthenticated(false);
             return;
         }
+
         try {
             const me = await authApi.me();
             setUser(me);
             setIsAuthenticated(true);
         } catch {
-            // токен плохой или не отправился — сбрасываем
-            localStorage.removeItem(TOKEN_KEY);
-            setUser(null);
-            setIsAuthenticated(false);
+            // fallback: держим пользователя авторизованным по токену
+            setIsAuthenticated(true);
+            setUser((prev) => prev ?? { email: "Authenticated user" });
         }
     }, []);
+
+    const register = useCallback(
+        async (dto: RegisterRequest) => {
+            const res = await authApi.register(dto);
+            localStorage.setItem(TOKEN_KEY, res.token);
+            setIsAuthenticated(true);
+            setUser({ email: dto.email });
+            await refreshMe();
+        },
+        [refreshMe]
+    );
 
     const login = useCallback(
         async (dto: LoginRequest) => {
             const res = await authApi.login(dto);
             localStorage.setItem(TOKEN_KEY, res.token);
             setIsAuthenticated(true);
+            setUser({ email: dto.email });
             await refreshMe();
         },
         [refreshMe]
@@ -57,16 +79,30 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         })();
     }, [refreshMe]);
 
+    const roles = useMemo(() => parseAuthorities(user?.authorities), [user?.authorities]);
+
+    const hasRole = useCallback(
+        (...expectedRoles: string[]) => {
+            if (expectedRoles.length === 0) return true;
+            if (!isAuthenticated) return false;
+            return expectedRoles.some((role) => roles.includes(role.toUpperCase()));
+        },
+        [isAuthenticated, roles]
+    );
+
     const value = useMemo(
         () => ({
             isReady,
             isAuthenticated,
             user,
+            roles,
+            hasRole,
+            register,
             login,
             logout,
             refreshMe,
         }),
-        [isReady, isAuthenticated, user, login, logout, refreshMe]
+        [isReady, isAuthenticated, user, roles, hasRole, register, login, logout, refreshMe]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

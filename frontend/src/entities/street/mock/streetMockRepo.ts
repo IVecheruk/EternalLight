@@ -1,7 +1,7 @@
 import type { Street } from "../model/types";
 
-type CreateDto = { name: string; districtId: number | null };
-type UpdateDto = { name: string; districtId: number | null };
+type CreateDto = { name: string };
+type UpdateDto = { name: string };
 
 const delay = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 const LS_KEY = "mock.streets.v1";
@@ -10,9 +10,9 @@ function read(): Street[] {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) {
         const seed: Street[] = [
-            { id: 1, name: "Brīvības iela", districtId: 1 },
-            { id: 2, name: "Krišjāņa Barona iela", districtId: 1 },
-            { id: 3, name: "Tērbatas iela", districtId: 2 },
+            { id: 1, name: "Brīvības iela" },
+            { id: 2, name: "Krišjāņa Barona iela" },
+            { id: 3, name: "Tērbatas iela" },
         ];
         localStorage.setItem(LS_KEY, JSON.stringify(seed));
         return seed;
@@ -34,7 +34,7 @@ export const streetMockRepo = {
         await delay();
         const items = read();
         const nextId = items.length ? Math.max(...items.map((x) => x.id)) + 1 : 1;
-        const created: Street = { id: nextId, name: dto.name, districtId: dto.districtId };
+        const created: Street = { id: nextId, name: dto.name };
         write([created, ...items]);
         return created;
     },
@@ -44,7 +44,7 @@ export const streetMockRepo = {
         const items = read();
         const idx = items.findIndex((x) => x.id === id);
         if (idx === -1) throw new Error("Street not found");
-        const updated: Street = { ...items[idx], name: dto.name, districtId: dto.districtId };
+        const updated: Street = { ...items[idx], name: dto.name };
         items[idx] = updated;
         write(items);
         return updated;
