@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/model/useAuth";
 
 export function LoginPage() {
     const { login } = useAuth();
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -13,6 +16,7 @@ export function LoginPage() {
             setLoading(true);
             setError(null);
             await login({ email: email.trim(), password });
+            navigate("/profile", { replace: true });
         } catch (e) {
             setError(e instanceof Error ? e.message : "Login failed");
         } finally {
@@ -57,6 +61,13 @@ export function LoginPage() {
             >
                 {loading ? "Signing in..." : "Sign in"}
             </button>
+
+            <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                Нет аккаунта?{" "}
+                <Link to="/register" className="font-medium text-neutral-900 underline dark:text-neutral-100">
+                    Зарегистрироваться
+                </Link>
+            </div>
         </div>
     );
 }
