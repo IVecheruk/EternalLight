@@ -20,6 +20,11 @@ export const organizationApi = {
         return http<Organization[]>("/api/v1/organizations", { auth: true });
     },
 
+    async get(id: number) {
+        if (USE_MOCK) return (await organizationMockRepo.list()).find((item) => item.id === id)!;
+        return http<Organization>(`/api/v1/organizations/${id}`, { auth: true });
+    },
+
     async create(data: CreateOrganizationRequest): Promise<Organization> {
         if (USE_MOCK) return organizationMockRepo.create(data);
         return http<Organization>("/api/v1/organizations", {
