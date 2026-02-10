@@ -1,19 +1,14 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-
 import { AppLayout } from "@/app/layout/AppLayout";
-
 import { HomePage } from "@/pages/home/HomePage";
 import { LoginPage } from "@/pages/login/LoginPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
-
 import { OrganizationsPage } from "@/pages/organizations/OrganizationsPage";
 import { DictionariesPage } from "@/pages/dictionaries/DictionariesPage";
 import { DistrictsPage } from "@/pages/districts/DistrictsPage";
 import { StreetsPage } from "@/pages/streets/StreetsPage";
-
 import { LightingObjectsPage } from "@/pages/lighting-objects/LightingObjectsPage";
 import { ActsPage } from "@/pages/acts/ActsPage";
-
 import { MapPage } from "@/pages/map/MapPage";
 import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
 import { RequireAuth } from "@/features/auth/ui/RequireAuth";
