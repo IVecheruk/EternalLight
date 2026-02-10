@@ -6,6 +6,12 @@ import type { MeResponse } from "../api/types";
 
 const TOKEN_KEY = "accessToken";
 
+function resolveAccessToken(res: { accessToken?: string; token?: string }): string {
+    const token = res.accessToken ?? res.token;
+    if (!token) throw new Error("Auth token is missing in server response");
+    return token;
+}
+
 function parseAuthorities(raw?: string): string[] {
     if (!raw) return [];
     return raw
@@ -54,7 +60,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     const register = useCallback(
         async (dto: RegisterRequest) => {
             const res = await authApi.register(dto);
-            localStorage.setItem(TOKEN_KEY, res.token);
+            localStorage.setItem(TOKEN_KEY, resolveAccessToken(res));
             setIsAuthenticated(true);
             await refreshMe();
         },
