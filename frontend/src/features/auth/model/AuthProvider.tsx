@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     const login = useCallback(
         async (dto: LoginRequest) => {
             const res = await authApi.login(dto);
-            localStorage.setItem(TOKEN_KEY, res.token);
+            localStorage.setItem(TOKEN_KEY, resolveAccessToken(res));
             setIsAuthenticated(true);
             setUser({ email: dto.email });
             await refreshMe();
