@@ -12,6 +12,7 @@ import { StreetsPage } from "@/pages/streets/StreetsPage";
 import { LightingObjectsPage } from "@/pages/lighting-objects/LightingObjectsPage";
 import { ActsPage } from "@/pages/acts/ActsPage";
 
+import { MapPage } from "@/pages/map/MapPage";
 import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
 
 export const router = createBrowserRouter([
@@ -21,17 +22,24 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <HomePage /> },
 
+            // auth (пока без защиты)
             { path: "login", element: <LoginPage /> },
             { path: "profile", element: <ProfilePage /> },
 
+            // navigation pages
             { path: "dictionaries", element: <DictionariesPage /> },
             { path: "organizations", element: <OrganizationsPage /> },
             { path: "districts", element: <DistrictsPage /> },
             { path: "streets", element: <StreetsPage /> },
 
+            // main entities
             { path: "lighting-objects", element: <LightingObjectsPage /> },
             { path: "acts", element: <ActsPage /> },
 
+            // map
+            { path: "map", element: <MapPage /> },
+
+            // 404 (always last)
             { path: "*", element: <NotFoundPage /> },
         ],
     },

@@ -10,6 +10,7 @@ const navItems = [
     { to: "/lighting-objects", label: "Lighting objects" },
     { to: "/acts", label: "Acts" },
     { to: "/dictionaries", label: "Dictionaries" },
+    { to: "/map", label: "Map" },
 ];
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -38,16 +39,20 @@ export const AppLayout = () => {
                         <button
                             type="button"
                             onClick={toggleTheme}
-                            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:bg-neutral-900"
+                            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
                             aria-label="Toggle theme"
                             title="Toggle theme"
                         >
-                            {theme === "dark" ? "🌙 Dark" : "☀️ Light"}
+                            {/* показываем, что включится при клике */}
+                            {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
                         </button>
 
                         {isAuthenticated ? (
                             <>
-                                <Link className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white" to="/profile">
+                                <Link
+                                    className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
+                                    to="/profile"
+                                >
                                     {user?.email ?? "Profile"}
                                 </Link>
                                 <Button variant="secondary" onClick={logout}>
@@ -55,7 +60,10 @@ export const AppLayout = () => {
                                 </Button>
                             </>
                         ) : (
-                            <Link className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white" to="/login">
+                            <Link
+                                className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
+                                to="/login"
+                            >
                                 Login
                             </Link>
                         )}
@@ -67,11 +75,13 @@ export const AppLayout = () => {
             <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:grid-cols-[240px_1fr]">
                 {/* Sidebar */}
                 <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-                    <div className="px-2 pb-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">NAVIGATION</div>
+                    <div className="px-2 pb-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+                        NAVIGATION
+                    </div>
 
                     <nav className="space-y-1">
                         {navItems.map((i) => (
-                            <NavLink key={i.to} to={i.to} className={navLinkClass}>
+                            <NavLink key={i.to} to={i.to} className={navLinkClass} end={i.to === "/"}>
                                 {i.label}
                             </NavLink>
                         ))}
