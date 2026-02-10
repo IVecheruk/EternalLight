@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
     { to: "/acts", label: "Acts", auth: true },
     { to: "/dictionaries", label: "Dictionaries", auth: true },
     { to: "/map", label: "Map", auth: true },
+    { to: "/crud", label: "CRUD Console", auth: true },
     { to: "/admin/organizations", label: "Admin • Organizations", auth: true, roles: ["SUPER_ADMIN", "ADMIN"] },
     { to: "/admin/users", label: "Admin • Users", auth: true, roles: ["SUPER_ADMIN", "ADMIN"] },
 ];

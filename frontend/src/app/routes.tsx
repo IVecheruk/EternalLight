@@ -11,6 +11,7 @@ import { StreetsPage } from "@/pages/streets/StreetsPage";
 import { LightingObjectsPage } from "@/pages/lighting-objects/LightingObjectsPage";
 import { ActsPage } from "@/pages/acts/ActsPage";
 import { MapPage } from "@/pages/map/MapPage";
+import { CrudConsolePage } from "@/pages/system/CrudConsolePage";
 import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
 import { RequireAuth } from "@/features/auth/ui/RequireAuth";
 import { RoleGuard } from "@/features/permissions/ui/RoleGuard";
@@ -97,6 +98,14 @@ export const router = createBrowserRouter([
                 ),
             },
             {
+                path: "crud",
+                element: (
+                    <RequireAuth>
+                        <CrudConsolePage />
+                    </RequireAuth>
+                ),
+            },
+            {
                 path: "admin/organizations",
                 element: (
                     <RoleGuard roles={["SUPER_ADMIN", "ADMIN"]}>
@@ -113,7 +122,7 @@ export const router = createBrowserRouter([
                 ),
             },
             { path: "home", element: <Navigate to="/" replace /> },
-            { path: "maps", element: <Navigate to="/map" replace /> },
+                        { path: "maps", element: <Navigate to="/map" replace /> },
             { path: "*", element: <NotFoundPage /> },
         ],
     },
