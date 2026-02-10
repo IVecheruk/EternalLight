@@ -1,4 +1,5 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
+
 import { AppLayout } from "@/app/layout/AppLayout";
 
 import { HomePage } from "@/pages/home/HomePage";
@@ -9,6 +10,7 @@ import { OrganizationsPage } from "@/pages/organizations/OrganizationsPage";
 import { DictionariesPage } from "@/pages/dictionaries/DictionariesPage";
 import { DistrictsPage } from "@/pages/districts/DistrictsPage";
 import { StreetsPage } from "@/pages/streets/StreetsPage";
+
 import { LightingObjectsPage } from "@/pages/lighting-objects/LightingObjectsPage";
 import { ActsPage } from "@/pages/acts/ActsPage";
 
@@ -20,6 +22,7 @@ export const router = createBrowserRouter([
         path: "/",
         element: <AppLayout />,
         children: [
+            // home
             { index: true, element: <HomePage /> },
 
             // auth (пока без защиты)
@@ -27,10 +30,10 @@ export const router = createBrowserRouter([
             { path: "profile", element: <ProfilePage /> },
 
             // navigation pages
-            { path: "dictionaries", element: <DictionariesPage /> },
             { path: "organizations", element: <OrganizationsPage /> },
             { path: "districts", element: <DistrictsPage /> },
             { path: "streets", element: <StreetsPage /> },
+            { path: "dictionaries", element: <DictionariesPage /> },
 
             // main entities
             { path: "lighting-objects", element: <LightingObjectsPage /> },
@@ -38,6 +41,10 @@ export const router = createBrowserRouter([
 
             // map
             { path: "map", element: <MapPage /> },
+
+            // optional redirects (можно убрать, если не нужно)
+            { path: "home", element: <Navigate to="/" replace /> },
+            { path: "maps", element: <Navigate to="/map" replace /> },
 
             // 404 (always last)
             { path: "*", element: <NotFoundPage /> },

@@ -4,6 +4,7 @@ import { Button } from "@/shared/ui/Button";
 import { useTheme } from "@/app/theme/ThemeProvider";
 
 const navItems = [
+    { to: "/", label: "Home" },
     { to: "/organizations", label: "Organizations" },
     { to: "/districts", label: "Districts" },
     { to: "/streets", label: "Streets" },
@@ -16,6 +17,7 @@ const navItems = [
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     [
         "block rounded-xl px-3 py-2 text-sm transition",
+        "focus:outline-none focus:ring-2 focus:ring-neutral-400/40 dark:focus:ring-neutral-500/40",
         isActive
             ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
             : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-900",
@@ -39,11 +41,10 @@ export const AppLayout = () => {
                         <button
                             type="button"
                             onClick={toggleTheme}
-                            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
+                            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:bg-neutral-900"
                             aria-label="Toggle theme"
                             title="Toggle theme"
                         >
-                            {/* показываем, что включится при клике */}
                             {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
                         </button>
 
@@ -55,6 +56,7 @@ export const AppLayout = () => {
                                 >
                                     {user?.email ?? "Profile"}
                                 </Link>
+
                                 <Button variant="secondary" onClick={logout}>
                                     Logout
                                 </Button>
@@ -81,7 +83,12 @@ export const AppLayout = () => {
 
                     <nav className="space-y-1">
                         {navItems.map((i) => (
-                            <NavLink key={i.to} to={i.to} className={navLinkClass} end={i.to === "/"}>
+                            <NavLink
+                                key={i.to}
+                                to={i.to}
+                                className={navLinkClass}
+                                end={i.to === "/"}
+                            >
                                 {i.label}
                             </NavLink>
                         ))}

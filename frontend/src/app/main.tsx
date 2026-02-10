@@ -5,6 +5,7 @@ import { router } from "@/app/routes";
 import { AuthProvider } from "@/features/auth/model/AuthProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 
+import "maplibre-gl/dist/maplibre-gl.css"; // ✅ вот это
 import "@/app/styles/index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
