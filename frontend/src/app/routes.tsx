@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/app/layout/AppLayout";
 import { HomePage } from "@/pages/home/HomePage";
 import { LoginPage } from "@/pages/login/LoginPage";
+import { RegisterPage } from "@/pages/register/RegisterPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
 import { OrganizationsPage } from "@/pages/organizations/OrganizationsPage";
 import { DictionariesPage } from "@/pages/dictionaries/DictionariesPage";
@@ -21,7 +22,15 @@ export const router = createBrowserRouter([
         path: "/",
         element: <AppLayout />,
         children: [
-            { index: true, element: <HomePage /> },
+            {
+                index: true,
+                element: (
+                    <RequireAuth>
+                        <HomePage />
+                    </RequireAuth>
+                ),
+            },
+            { path: "register", element: <RegisterPage /> },
             { path: "login", element: <LoginPage /> },
             {
                 path: "profile",

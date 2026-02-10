@@ -75,12 +75,20 @@ export const AppLayout = () => {
                                 </Button>
                             </>
                         ) : (
-                            <Link
-                                className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
-                                to="/login"
-                            >
-                                Login
-                            </Link>
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
+                                    to="/register"
+                                >
+                                    Register
+                                </Link>
+                                <Link
+                                    className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
+                                    to="/login"
+                                >
+                                    Login
+                                </Link>
+                            </div>
                         )}
                     </div>
                 </div>

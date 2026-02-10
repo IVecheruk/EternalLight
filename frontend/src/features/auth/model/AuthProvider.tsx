@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthContext } from "./AuthContext";
-import type { LoginRequest } from "./AuthContext";
+import type { LoginRequest, RegisterRequest } from "./AuthContext";
 import { authApi } from "../api/authApi";
 import type { MeResponse } from "../api/types";
 
@@ -45,6 +45,16 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         }
     }, []);
 
+
+    const register = useCallback(
+        async (dto: RegisterRequest) => {
+            const res = await authApi.register(dto);
+            localStorage.setItem(TOKEN_KEY, res.token);
+            setIsAuthenticated(true);
+            await refreshMe();
+        },
+        [refreshMe]
+    );
     const login = useCallback(
         async (dto: LoginRequest) => {
             const res = await authApi.login(dto);
@@ -80,11 +90,12 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             user,
             roles,
             hasRole,
+            register,
             login,
             logout,
             refreshMe,
         }),
-        [isReady, isAuthenticated, user, roles, hasRole, login, logout, refreshMe]
+        [isReady, isAuthenticated, user, roles, hasRole, register, login, logout, refreshMe]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
