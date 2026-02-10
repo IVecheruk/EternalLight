@@ -29,15 +29,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
 
+        // preflight
         if (HttpMethod.OPTIONS.matches(request.getMethod())) return true;
 
-        // ✅ пропускаем только login/register (а НЕ /me)
-        if (HttpMethod.POST.matches(request.getMethod())
-                && (path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/register"))) {
-            return true;
-        }
-
-        return path.startsWith("/actuator/");
+        // публичные только login/register
+        return path.equals("/api/v1/auth/login")
+                || path.equals("/api/v1/auth/register")
+                || path.startsWith("/actuator/");
     }
 
 

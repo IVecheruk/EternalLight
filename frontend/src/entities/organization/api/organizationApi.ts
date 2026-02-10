@@ -6,15 +6,15 @@ const api = axios.create({
     withCredentials: false,
 });
 
-// если ты используешь JWT в localStorage:
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem("accessToken");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-});
+export type CreateOrganizationRequest = {
+    fullName: string;
+    city?: string | null;
+};
 
-export type CreateOrganizationRequest = { fullName: string; city?: string | null };
-export type UpdateOrganizationRequest = { fullName: string; city?: string | null };
+export type UpdateOrganizationRequest = {
+    fullName: string;
+    city?: string | null;
+};
 
 export const organizationApi = {
     async list(): Promise<Organization[]> {

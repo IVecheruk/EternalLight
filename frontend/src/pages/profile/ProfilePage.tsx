@@ -1,23 +1,24 @@
-import { Card } from "@/shared/ui/Card";
+import { PageShell } from "@/shared/ui/PageShell";
 import { useAuth } from "@/features/auth/model/useAuth";
 
 export const ProfilePage = () => {
-    const { user } = useAuth();
+    const { isAuthenticated, user } = useAuth();
 
     return (
-        <div className="max-w-2xl">
-            <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+        <PageShell title="Profile" description="Личный кабинет. Позже добавим роли и настройки.">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-800">
+                <div className="space-y-2">
+                    <div>
+                        <span className="font-medium">Authenticated:</span>{" "}
+                        {isAuthenticated ? "yes" : "no"}
+                    </div>
 
-            <Card className="mt-6 p-5">
-                <div className="text-sm text-gray-600">Signed in as</div>
-                <div className="mt-1 text-lg font-semibold">
-                    {user?.name ?? "-"}
+                    <div>
+                        <span className="font-medium">User:</span>{" "}
+                        {user ? JSON.stringify(user) : "null"}
+                    </div>
                 </div>
-
-                <div className="mt-4 text-xs text-gray-500">
-                    Later: roles, permissions, personal cabinet, settings.
-                </div>
-            </Card>
-        </div>
+            </div>
+        </PageShell>
     );
 };

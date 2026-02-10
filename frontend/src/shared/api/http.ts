@@ -5,6 +5,8 @@ type HttpOptions = {
     headers?: Record<string, string>;
 };
 
+const TOKEN_KEY = "accessToken";
+
 export async function http<T>(url: string, options: HttpOptions = {}): Promise<T> {
     const method = options.method ?? "GET";
 
@@ -14,7 +16,7 @@ export async function http<T>(url: string, options: HttpOptions = {}): Promise<T
     };
 
     if (options.auth) {
-        const token = localStorage.getItem("accessToken");
+        const token = localStorage.getItem(TOKEN_KEY);
         if (token) headers.Authorization = `Bearer ${token}`;
     }
 
@@ -24,15 +26,18 @@ export async function http<T>(url: string, options: HttpOptions = {}): Promise<T
         body: options.body,
     });
 
+    if (res.status === 204) return null as T;
+
     const text = await res.text();
-    const data = text ? JSON.parse(text) : null;
+    let data: any = null;
+    try {
+        data = text ? JSON.parse(text) : null;
+    } catch {
+        data = text;
+    }
 
     if (!res.ok) {
-        // пробуем достать человеко-читаемое сообщение
-        const msg =
-            data?.message ||
-            data?.error ||
-            `Request failed with status code ${res.status}`;
+        const msg = data?.message || data?.error || `Request failed with status code ${res.status}`;
         throw new Error(msg);
     }
 

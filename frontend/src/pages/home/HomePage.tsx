@@ -1,4 +1,17 @@
-export function HomePage() {
+import { Link } from "react-router-dom";
+
+type CardProps = { title: string; text: string };
+
+const Card = ({ title, text }: CardProps) => {
+    return (
+        <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div className="text-sm font-semibold text-neutral-900">{title}</div>
+            <div className="mt-2 text-sm leading-relaxed text-neutral-600">{text}</div>
+        </div>
+    );
+};
+
+export const HomePage = () => {
     return (
         <div className="space-y-10">
             <section className="rounded-3xl border border-neutral-200 bg-gradient-to-b from-neutral-50 to-white p-8 shadow-sm">
@@ -8,7 +21,7 @@ export function HomePage() {
                         Backend is running • Frontend is running
                     </div>
 
-                    <h1 className="text-4xl font-semibold tracking-tight">
+                    <h1 className="text-4xl font-semibold tracking-tight text-neutral-900">
                         EternalLight.
                         <span className="text-neutral-500"> Управление уличным освещением.</span>
                     </h1>
@@ -19,36 +32,37 @@ export function HomePage() {
                     </p>
 
                     <div className="flex flex-wrap gap-3 pt-2">
-                        <a
-                            href="/organizations"
+                        <Link
+                            to="/organizations"
                             className="rounded-xl bg-black px-5 py-3 text-sm font-medium text-white shadow-sm hover:opacity-90"
                         >
                             Open Organizations
-                        </a>
-                        <a
-                            href="/login"
+                        </Link>
+
+                        <Link
+                            to="/login"
                             className="rounded-xl border border-neutral-200 bg-white px-5 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
                         >
                             Go to Login
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </section>
 
             <section className="grid gap-4 md:grid-cols-3">
-                <Card title="Чёткая архитектура" text="FSD-структура, единый стиль, предсказуемые зависимости." />
-                <Card title="REST интеграция" text="axios-клиент, типы DTO, обработка ошибок, пагинация." />
-                <Card title="Auth & Roles" text="JWT, protected routes, роли (USER/ADMIN), личный кабинет." />
+                <Card
+                    title="Чёткая архитектура"
+                    text="FSD-структура, единый стиль, предсказуемые зависимости."
+                />
+                <Card
+                    title="REST интеграция"
+                    text="Клиент API, типы DTO, обработка ошибок, пагинация."
+                />
+                <Card
+                    title="Auth & Roles"
+                    text="JWT, protected routes, роли (USER/ADMIN), личный кабинет."
+                />
             </section>
         </div>
     );
-}
-
-function Card(props: { title: string; text: string }) {
-    return (
-        <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="text-sm font-semibold">{props.title}</div>
-            <div className="mt-2 text-sm leading-relaxed text-neutral-600">{props.text}</div>
-        </div>
-    );
-}
+};
