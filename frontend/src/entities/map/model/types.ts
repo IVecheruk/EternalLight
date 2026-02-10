@@ -1,14 +1,20 @@
 export type MapPointStatus = "OK" | "WARN" | "OFF" | "FAULT";
 
 export type MapPoint = {
-    id: string;
+    id: number;
     name: string;
     lat: number;
     lng: number;
     status: MapPointStatus;
     loadKw: number;
-    loadPct: number; // 0..100
+    loadPct: number;
     updatedAt: string;
+};
+
+export type MapHeatCell = {
+    lat: number;
+    lng: number;
+    intensity: number;
 };
 
 export type MapDataSummary = {
@@ -22,6 +28,7 @@ export type MapDataSummary = {
 export type MapDataResponse = {
     summary: MapDataSummary;
     points: MapPoint[];
+    heat?: MapHeatCell[];
 };
 
 export type MapLoadParams = {

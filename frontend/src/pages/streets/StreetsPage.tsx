@@ -3,14 +3,11 @@ import { TablePage } from "@/shared/ui/TablePage";
 import { Modal } from "@/shared/ui/Modal";
 import { streetApi } from "@/entities/street/api/streetApi";
 import type { Street } from "@/entities/street/model/types";
-import { districtApi } from "@/entities/district/api/districtApi";
-import type { District } from "@/entities/district/model/types";
 
-type FormState = { name: string; districtId: number | null };
+type FormState = { name: string };
 
 export const StreetsPage = () => {
     const [items, setItems] = useState<Street[]>([]);
-    const [districts, setDistricts] = useState<District[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -18,21 +15,13 @@ export const StreetsPage = () => {
     const [editOpen, setEditOpen] = useState(false);
     const [selected, setSelected] = useState<Street | null>(null);
 
-    const [form, setForm] = useState<FormState>({ name: "", districtId: null });
-
-    const districtNameById = useMemo(() => {
-        const map = new Map<number, string>();
-        districts.forEach((d) => map.set(d.id, d.name));
-        return map;
-    }, [districts]);
+    const [form, setForm] = useState<FormState>({ name: "" });
 
     const load = async () => {
         setLoading(true);
         setError(null);
         try {
-            const [streets, dists] = await Promise.all([streetApi.list(), districtApi.list()]);
-            setItems(streets);
-            setDistricts(dists);
+            setItems(await streetApi.list());
         } catch (e: any) {
             setError(e?.message ?? "Не удалось загрузить улицы.");
         } finally {
@@ -49,7 +38,7 @@ export const StreetsPage = () => {
             <button
                 type="button"
                 onClick={() => {
-                    setForm({ name: "", districtId: null });
+                    setForm({ name: "" });
                     setCreateOpen(true);
                 }}
                 className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
@@ -62,7 +51,7 @@ export const StreetsPage = () => {
 
     const openEdit = (s: Street) => {
         setSelected(s);
-        setForm({ name: s.name, districtId: s.districtId ?? null });
+        setForm({ name: s.name });
         setEditOpen(true);
     };
 
@@ -72,7 +61,7 @@ export const StreetsPage = () => {
 
         try {
             setError(null);
-            await streetApi.create({ name, districtId: form.districtId });
+            await streetApi.create({ name });
             setCreateOpen(false);
             await load();
         } catch (e: any) {
@@ -87,7 +76,7 @@ export const StreetsPage = () => {
 
         try {
             setError(null);
-            await streetApi.update(selected.id, { name, districtId: form.districtId });
+            await streetApi.update(selected.id, { name });
             setEditOpen(false);
             setSelected(null);
             await load();
@@ -111,16 +100,8 @@ export const StreetsPage = () => {
 
     return (
         <>
-            <TablePage
-                title="Streets"
-                subtitle="Справочник улиц (с привязкой к району)."
-                actions={actions}
-                loading={loading}
-                error={error}
-            >
-                <div className="border-b border-neutral-200 px-5 py-3 text-sm font-medium text-neutral-900">
-                    Total: {items.length}
-                </div>
+            <TablePage title="Streets" subtitle="Справочник улиц." actions={actions} loading={loading} error={error}>
+                <div className="border-b border-neutral-200 px-5 py-3 text-sm font-medium text-neutral-900">Total: {items.length}</div>
 
                 {items.length === 0 ? (
                     <div className="px-5 py-6 text-sm text-neutral-600">
@@ -135,9 +116,6 @@ export const StreetsPage = () => {
                                         <div className="truncate text-sm font-semibold text-neutral-900">{s.name}</div>
                                         <div className="mt-1 text-xs text-neutral-600">
                                             <span className="font-medium text-neutral-700">ID:</span> {s.id}
-                                            {" • "}
-                                            <span className="font-medium text-neutral-700">District:</span>{" "}
-                                            {s.districtId ? districtNameById.get(s.districtId) ?? `#${s.districtId}` : "—"}
                                         </div>
                                     </div>
 
@@ -165,103 +143,63 @@ export const StreetsPage = () => {
             </TablePage>
 
             <Modal open={createOpen} title="Create street" onClose={() => setCreateOpen(false)}>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="block text-xs font-medium text-neutral-700">Name</label>
-                        <input
-                            value={form.name}
-                            onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                            placeholder="Brīvības iela"
-                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="block text-xs font-medium text-neutral-700">District</label>
-                        <select
-                            value={form.districtId ?? 0}
-                            onChange={(e) => {
-                                const v = Number(e.target.value);
-                                setForm((s) => ({ ...s, districtId: v === 0 ? null : v }));
-                            }}
-                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
-                        >
-                            <option value={0}>— не выбран —</option>
-                            {districts.map((d) => (
-                                <option key={d.id} value={d.id}>
-                                    {d.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2 pt-2">
-                        <button
-                            type="button"
-                            onClick={() => setCreateOpen(false)}
-                            className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => void submitCreate()}
-                            className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
-                        >
-                            Create
-                        </button>
-                    </div>
-                </div>
+                <StreetForm
+                    value={form}
+                    onChange={setForm}
+                    onCancel={() => setCreateOpen(false)}
+                    onSubmit={() => void submitCreate()}
+                    submitLabel="Create"
+                />
             </Modal>
 
             <Modal open={editOpen} title="Update street" onClose={() => setEditOpen(false)}>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="block text-xs font-medium text-neutral-700">Name</label>
-                        <input
-                            value={form.name}
-                            onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="block text-xs font-medium text-neutral-700">District</label>
-                        <select
-                            value={form.districtId ?? 0}
-                            onChange={(e) => {
-                                const v = Number(e.target.value);
-                                setForm((s) => ({ ...s, districtId: v === 0 ? null : v }));
-                            }}
-                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
-                        >
-                            <option value={0}>— не выбран —</option>
-                            {districts.map((d) => (
-                                <option key={d.id} value={d.id}>
-                                    {d.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2 pt-2">
-                        <button
-                            type="button"
-                            onClick={() => setEditOpen(false)}
-                            className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => void submitEdit()}
-                            className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
-                        >
-                            Save
-                        </button>
-                    </div>
-                </div>
+                <StreetForm
+                    value={form}
+                    onChange={setForm}
+                    onCancel={() => setEditOpen(false)}
+                    onSubmit={() => void submitEdit()}
+                    submitLabel="Save"
+                />
             </Modal>
         </>
     );
 };
+
+function StreetForm(props: {
+    value: FormState;
+    onChange: (next: FormState) => void;
+    onCancel: () => void;
+    onSubmit: () => void;
+    submitLabel: string;
+}) {
+    return (
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <label className="block text-xs font-medium text-neutral-700">Name</label>
+                <input
+                    value={props.value.name}
+                    onChange={(e) => props.onChange({ name: e.target.value })}
+                    placeholder="Ленина"
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
+                />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                    type="button"
+                    onClick={props.onCancel}
+                    className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    onClick={props.onSubmit}
+                    className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
+                >
+                    {props.submitLabel}
+                </button>
+            </div>
+        </div>
+    );
+}

@@ -108,7 +108,7 @@ function buildPoints(params: MapLoadParams, count: number): MapPoint[] {
         const updatedAt = new Date(t).toISOString();
 
         points.push({
-            id: `pt-${i + 1}`,
+            id: i + 1,
             name: `Опора №${i + 1}`,
             lat,
             lng,

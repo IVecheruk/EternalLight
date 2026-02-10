@@ -3,5 +3,5 @@ export type TokenResponse = { token: string; type?: string };
 
 export type MeResponse = {
     email: string;
-    role?: string;
+    authorities?: string;
 };
