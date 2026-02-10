@@ -4,6 +4,7 @@ import { AppLayout } from "@/app/layout/AppLayout";
 
 import { HomePage } from "@/pages/home/HomePage";
 import { LoginPage } from "@/pages/login/LoginPage";
+import { RegisterPage } from "@/pages/register/RegisterPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
 
 import { OrganizationsPage } from "@/pages/organizations/OrganizationsPage";
@@ -16,37 +17,108 @@ import { ActsPage } from "@/pages/acts/ActsPage";
 
 import { MapPage } from "@/pages/map/MapPage";
 import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
+import { RequireAuth } from "@/features/auth/ui/RequireAuth";
+import { RoleGuard } from "@/features/permissions/ui/RoleGuard";
+import { AdminOrganizationsPage } from "@/pages/admin/organizations/AdminOrganizationsPage";
+import { AdminUsersPage } from "@/pages/admin/users/AdminUsersPage";
 
 export const router = createBrowserRouter([
     {
         path: "/",
         element: <AppLayout />,
         children: [
-            // home
-            { index: true, element: <HomePage /> },
-
-            // auth (пока без защиты)
+            {
+                index: true,
+                element: (
+                    <RequireAuth>
+                        <HomePage />
+                    </RequireAuth>
+                ),
+            },
+            { path: "register", element: <RegisterPage /> },
             { path: "login", element: <LoginPage /> },
-            { path: "profile", element: <ProfilePage /> },
-
-            // navigation pages
-            { path: "organizations", element: <OrganizationsPage /> },
-            { path: "districts", element: <DistrictsPage /> },
-            { path: "streets", element: <StreetsPage /> },
-            { path: "dictionaries", element: <DictionariesPage /> },
-
-            // main entities
-            { path: "lighting-objects", element: <LightingObjectsPage /> },
-            { path: "acts", element: <ActsPage /> },
-
-            // map
-            { path: "map", element: <MapPage /> },
-
-            // optional redirects (можно убрать, если не нужно)
+            {
+                path: "profile",
+                element: (
+                    <RequireAuth>
+                        <ProfilePage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: "organizations",
+                element: (
+                    <RequireAuth>
+                        <OrganizationsPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: "districts",
+                element: (
+                    <RequireAuth>
+                        <DistrictsPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: "streets",
+                element: (
+                    <RequireAuth>
+                        <StreetsPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: "dictionaries",
+                element: (
+                    <RequireAuth>
+                        <DictionariesPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: "lighting-objects",
+                element: (
+                    <RequireAuth>
+                        <LightingObjectsPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: "acts",
+                element: (
+                    <RequireAuth>
+                        <ActsPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: "map",
+                element: (
+                    <RequireAuth>
+                        <MapPage />
+                    </RequireAuth>
+                ),
+            },
+            {
+                path: "admin/organizations",
+                element: (
+                    <RoleGuard roles={["SUPER_ADMIN", "ADMIN"]}>
+                        <AdminOrganizationsPage />
+                    </RoleGuard>
+                ),
+            },
+            {
+                path: "admin/users",
+                element: (
+                    <RoleGuard roles={["SUPER_ADMIN", "ADMIN"]}>
+                        <AdminUsersPage />
+                    </RoleGuard>
+                ),
+            },
             { path: "home", element: <Navigate to="/" replace /> },
             { path: "maps", element: <Navigate to="/map" replace /> },
-
-            // 404 (always last)
             { path: "*", element: <NotFoundPage /> },
         ],
     },

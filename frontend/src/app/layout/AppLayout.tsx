@@ -3,15 +3,24 @@ import { useAuth } from "@/features/auth/model/useAuth";
 import { Button } from "@/shared/ui/Button";
 import { useTheme } from "@/app/theme/ThemeProvider";
 
-const navItems = [
+type NavItem = {
+    to: string;
+    label: string;
+    auth?: boolean;
+    roles?: string[];
+};
+
+const navItems: NavItem[] = [
     { to: "/", label: "Home" },
-    { to: "/organizations", label: "Organizations" },
-    { to: "/districts", label: "Districts" },
-    { to: "/streets", label: "Streets" },
-    { to: "/lighting-objects", label: "Lighting objects" },
-    { to: "/acts", label: "Acts" },
-    { to: "/dictionaries", label: "Dictionaries" },
-    { to: "/map", label: "Map" },
+    { to: "/organizations", label: "Organizations", auth: true },
+    { to: "/districts", label: "Districts", auth: true },
+    { to: "/streets", label: "Streets", auth: true },
+    { to: "/lighting-objects", label: "Lighting objects", auth: true },
+    { to: "/acts", label: "Acts", auth: true },
+    { to: "/dictionaries", label: "Dictionaries", auth: true },
+    { to: "/map", label: "Map", auth: true },
+    { to: "/admin/organizations", label: "Admin • Organizations", auth: true, roles: ["SUPER_ADMIN", "ADMIN"] },
+    { to: "/admin/users", label: "Admin • Users", auth: true, roles: ["SUPER_ADMIN", "ADMIN"] },
 ];
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -24,12 +33,17 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     ].join(" ");
 
 export const AppLayout = () => {
-    const { isAuthenticated, user, logout } = useAuth();
+    const { isAuthenticated, user, logout, hasRole } = useAuth();
     const { theme, toggleTheme } = useTheme();
+
+    const visibleNavItems = navItems.filter((item) => {
+        if (item.auth && !isAuthenticated) return false;
+        if (item.roles?.length) return hasRole(...item.roles);
+        return true;
+    });
 
     return (
         <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-            {/* Top bar */}
             <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white/80 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/80">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
                     <Link to="/" className="text-sm font-semibold tracking-tight">
@@ -37,7 +51,6 @@ export const AppLayout = () => {
                     </Link>
 
                     <div className="flex items-center gap-2">
-                        {/* Theme toggle */}
                         <button
                             type="button"
                             onClick={toggleTheme}
@@ -62,40 +75,38 @@ export const AppLayout = () => {
                                 </Button>
                             </>
                         ) : (
-                            <Link
-                                className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
-                                to="/login"
-                            >
-                                Login
-                            </Link>
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
+                                    to="/register"
+                                >
+                                    Register
+                                </Link>
+                                <Link
+                                    className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
+                                    to="/login"
+                                >
+                                    Login
+                                </Link>
+                            </div>
                         )}
                     </div>
                 </div>
             </header>
 
-            {/* Page */}
             <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:grid-cols-[240px_1fr]">
-                {/* Sidebar */}
                 <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-                    <div className="px-2 pb-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
-                        NAVIGATION
-                    </div>
+                    <div className="px-2 pb-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">NAVIGATION</div>
 
                     <nav className="space-y-1">
-                        {navItems.map((i) => (
-                            <NavLink
-                                key={i.to}
-                                to={i.to}
-                                className={navLinkClass}
-                                end={i.to === "/"}
-                            >
+                        {visibleNavItems.map((i) => (
+                            <NavLink key={i.to} to={i.to} className={navLinkClass} end={i.to === "/"}>
                                 {i.label}
                             </NavLink>
                         ))}
                     </nav>
                 </aside>
 
-                {/* Content */}
                 <main className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
                     <Outlet />
                 </main>
