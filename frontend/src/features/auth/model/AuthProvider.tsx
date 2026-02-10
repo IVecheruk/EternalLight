@@ -6,12 +6,6 @@ import type { MeResponse } from "../api/types";
 
 const TOKEN_KEY = "accessToken";
 
-function resolveAccessToken(payload: { accessToken?: string; token?: string }): string {
-    const token = payload.accessToken ?? payload.token;
-    if (!token) throw new Error("Токен не получен от сервера");
-    return token;
-}
-
 function parseAuthorities(raw?: string): string[] {
     if (!raw) return [];
     return raw
@@ -50,23 +44,22 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             setUser(me);
             setIsAuthenticated(true);
         } catch {
-            // fallback: держим пользователя авторизованным по токену
-            setIsAuthenticated(true);
-            setUser((prev) => prev ?? { email: "Authenticated user" });
+            localStorage.removeItem(TOKEN_KEY);
+            setUser(null);
+            setIsAuthenticated(false);
         }
     }, []);
+
 
     const register = useCallback(
         async (dto: RegisterRequest) => {
             const res = await authApi.register(dto);
-            localStorage.setItem(TOKEN_KEY, resolveAccessToken(res));
+            localStorage.setItem(TOKEN_KEY, res.token);
             setIsAuthenticated(true);
-            setUser({ email: dto.email });
             await refreshMe();
         },
         [refreshMe]
     );
-
     const login = useCallback(
         async (dto: LoginRequest) => {
             const res = await authApi.login(dto);

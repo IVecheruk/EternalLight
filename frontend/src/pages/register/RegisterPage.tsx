@@ -23,7 +23,7 @@ export function RegisterPage() {
             setLoading(true);
             setError(null);
             await register({ email: trimmedEmail, password });
-            navigate("/", { replace: true });
+            navigate("/profile", { replace: true });
         } catch (e) {
             setError(e instanceof Error ? e.message : "Registration failed");
         } finally {

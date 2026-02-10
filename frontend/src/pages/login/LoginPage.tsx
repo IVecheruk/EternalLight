@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/model/useAuth";
 
 export function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
-    const location = useLocation();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -17,8 +16,7 @@ export function LoginPage() {
             setLoading(true);
             setError(null);
             await login({ email: email.trim(), password });
-            const from = (location.state as { from?: string } | null)?.from;
-            navigate(from || "/", { replace: true });
+            navigate("/profile", { replace: true });
         } catch (e) {
             setError(e instanceof Error ? e.message : "Login failed");
         } finally {
