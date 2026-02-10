@@ -5,6 +5,7 @@ const BASE = "/api/v1/lighting-objects";
 
 export const lightingObjectApi = {
     list: () => http<LightingObject[]>(BASE, { auth: true }),
+    get: (id: number) => http<LightingObject>(`${BASE}/${id}`, { auth: true }),
     create: (data: LightingObjectUpsertRequest) =>
         http<LightingObject>(BASE, {
             method: "POST",

@@ -18,6 +18,11 @@ export const streetApi = {
         return http<Street[]>("/api/v1/streets", { auth: true });
     },
 
+    async get(id: number): Promise<Street> {
+        if (USE_MOCK) return (await streetMockRepo.list()).find((item) => item.id === id)!;
+        return http<Street>(`/api/v1/streets/${id}`, { auth: true });
+    },
+
     async create(data: CreateStreetRequest): Promise<Street> {
         if (USE_MOCK) return streetMockRepo.create(data);
         return http<Street>("/api/v1/streets", {

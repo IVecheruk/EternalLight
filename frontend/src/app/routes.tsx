@@ -10,8 +10,6 @@ import { DistrictsPage } from "@/pages/districts/DistrictsPage";
 import { StreetsPage } from "@/pages/streets/StreetsPage";
 import { LightingObjectsPage } from "@/pages/lighting-objects/LightingObjectsPage";
 import { ActsPage } from "@/pages/acts/ActsPage";
-import { MapPage } from "@/pages/map/MapPage";
-import { CrudConsolePage } from "@/pages/system/CrudConsolePage";
 import { NotFoundPage } from "@/pages/not-found/NotFoundPage";
 import { RequireAuth } from "@/features/auth/ui/RequireAuth";
 import { RoleGuard } from "@/features/permissions/ui/RoleGuard";
@@ -90,22 +88,6 @@ export const router = createBrowserRouter([
                 ),
             },
             {
-                path: "map",
-                element: (
-                    <RequireAuth>
-                        <MapPage />
-                    </RequireAuth>
-                ),
-            },
-            {
-                path: "crud",
-                element: (
-                    <RequireAuth>
-                        <CrudConsolePage />
-                    </RequireAuth>
-                ),
-            },
-            {
                 path: "admin/organizations",
                 element: (
                     <RoleGuard roles={["SUPER_ADMIN", "ORG_ADMIN"]}>
@@ -122,7 +104,8 @@ export const router = createBrowserRouter([
                 ),
             },
             { path: "home", element: <Navigate to="/" replace /> },
-            { path: "maps", element: <Navigate to="/map" replace /> },
+            { path: "map", element: <Navigate to="/" replace /> },
+            { path: "maps", element: <Navigate to="/" replace /> },
             { path: "*", element: <NotFoundPage /> },
         ],
     },

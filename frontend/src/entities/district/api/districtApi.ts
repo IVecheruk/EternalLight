@@ -13,6 +13,11 @@ export const districtApi = {
         return http<District[]>("/api/v1/administrative-districts", { auth: true });
     },
 
+    async get(id: number): Promise<District> {
+        if (USE_MOCK) return (await districtMockRepo.list()).find((item) => item.id === id)!;
+        return http<District>(`/api/v1/administrative-districts/${id}`, { auth: true });
+    },
+
     async create(data: CreateDistrictRequest): Promise<District> {
         if (USE_MOCK) return districtMockRepo.create(data);
         return http<District>("/api/v1/administrative-districts", {
