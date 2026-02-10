@@ -8,6 +8,11 @@ type Resource = {
     readOnly?: boolean;
 };
 
+type PayloadField = {
+    key: string;
+    value: string;
+};
+
 const resources: Resource[] = [
     { key: "organizations", label: "Organizations", endpoint: "/api/v1/organizations" },
     { key: "districts", label: "Administrative districts", endpoint: "/api/v1/administrative-districts" },
@@ -19,37 +24,12 @@ const resources: Resource[] = [
     { key: "faultTypes", label: "Fault types", endpoint: "/api/v1/fault-types" },
     { key: "uoms", label: "Units of measure", endpoint: "/api/v1/uoms" },
     { key: "employees", label: "Employees", endpoint: "/api/v1/employees" },
-    {
-        key: "equipmentConditions",
-        label: "Equipment conditions",
-        endpoint: "/api/v1/equipment-conditions",
-        readOnly: true,
-    },
-    {
-        key: "workActBasis",
-        label: "Work act basis (set workActId in endpoint)",
-        endpoint: "/api/v1/work-acts/1/basis",
-    },
-    {
-        key: "workActFaults",
-        label: "Work act faults (set workActId in endpoint)",
-        endpoint: "/api/v1/work-acts/1/faults",
-    },
-    {
-        key: "workActBrigade",
-        label: "Work act brigade (set workActId in endpoint)",
-        endpoint: "/api/v1/work-acts/1/brigade",
-    },
-    {
-        key: "workActMaterials",
-        label: "Work act materials (set workActId in endpoint)",
-        endpoint: "/api/v1/work-acts/1/materials",
-    },
-    {
-        key: "workActLabor",
-        label: "Work act labor items (set workActId in endpoint)",
-        endpoint: "/api/v1/work-acts/1/labor-items",
-    },
+    { key: "equipmentConditions", label: "Equipment conditions", endpoint: "/api/v1/equipment-conditions", readOnly: true },
+    { key: "workActBasis", label: "Work act basis (set workActId in endpoint)", endpoint: "/api/v1/work-acts/1/basis" },
+    { key: "workActFaults", label: "Work act faults (set workActId in endpoint)", endpoint: "/api/v1/work-acts/1/faults" },
+    { key: "workActBrigade", label: "Work act brigade (set workActId in endpoint)", endpoint: "/api/v1/work-acts/1/brigade" },
+    { key: "workActMaterials", label: "Work act materials (set workActId in endpoint)", endpoint: "/api/v1/work-acts/1/materials" },
+    { key: "workActLabor", label: "Work act labor items (set workActId in endpoint)", endpoint: "/api/v1/work-acts/1/labor-items" },
 ];
 
 function pretty(value: unknown): string {
@@ -68,6 +48,16 @@ function joinUrl(endpoint: string, id?: string, query?: string) {
     return `${withId}?${q}`;
 }
 
+function parseValue(raw: string): unknown {
+    const trimmed = raw.trim();
+    if (trimmed === "") return "";
+    if (trimmed === "null") return null;
+    if (trimmed === "true") return true;
+    if (trimmed === "false") return false;
+    if (!Number.isNaN(Number(trimmed)) && trimmed !== "") return Number(trimmed);
+    return trimmed;
+}
+
 export function CrudConsolePage() {
     const [resourceKey, setResourceKey] = useState(resources[0].key);
     const [endpoint, setEndpoint] = useState(resources[0].endpoint);
@@ -75,7 +65,7 @@ export function CrudConsolePage() {
     const [rows, setRows] = useState<Record<string, unknown>[]>([]);
     const [responseBody, setResponseBody] = useState<unknown>(null);
     const [selectedId, setSelectedId] = useState<string>("");
-    const [payload, setPayload] = useState<string>("{}\n");
+    const [fields, setFields] = useState<PayloadField[]>([{ key: "name", value: "" }]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -103,25 +93,22 @@ export function CrudConsolePage() {
         setError(null);
         setMessage(null);
         try {
-            const url = joinUrl(endpoint, undefined, query);
-            const data = await http<unknown>(url, { auth: true });
+            const data = await http<unknown>(joinUrl(endpoint, undefined, query), { auth: true });
             setResponseBody(data);
 
             if (Array.isArray(data)) {
                 setRows(data as Record<string, unknown>[]);
                 setMessage(`Loaded ${data.length} records.`);
-                return;
+            } else {
+                const pageLike = (data ?? {}) as { content?: Record<string, unknown>[] };
+                if (Array.isArray(pageLike.content)) {
+                    setRows(pageLike.content);
+                    setMessage(`Loaded ${pageLike.content.length} records (paginated response).`);
+                } else {
+                    setRows([]);
+                    setMessage("Loaded object response.");
+                }
             }
-
-            const pageLike = (data ?? {}) as { content?: Record<string, unknown>[] };
-            if (Array.isArray(pageLike.content)) {
-                setRows(pageLike.content);
-                setMessage(`Loaded ${pageLike.content.length} records (paginated response).`);
-                return;
-            }
-
-            setRows([]);
-            setMessage("Loaded object response.");
         } catch (e: any) {
             setRows([]);
             setResponseBody(null);
@@ -152,12 +139,19 @@ export function CrudConsolePage() {
         }
     };
 
-    const parsePayload = (): Record<string, unknown> => {
-        const parsed = JSON.parse(payload);
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("Payload must be a JSON object");
+    const buildPayload = (): Record<string, unknown> => {
+        const obj: Record<string, unknown> = {};
+        for (const field of fields) {
+            const key = field.key.trim();
+            if (!key) continue;
+            obj[key] = parseValue(field.value);
         }
-        return parsed;
+
+        if (Object.keys(obj).length === 0) {
+            throw new Error("Add at least one payload field");
+        }
+
+        return obj;
     };
 
     const createItem = async () => {
@@ -166,14 +160,13 @@ export function CrudConsolePage() {
         setError(null);
         setMessage(null);
         try {
-            const body = parsePayload();
             const created = await http<unknown>(joinUrl(endpoint, undefined, query), {
                 method: "POST",
                 auth: true,
-                body: JSON.stringify(body),
+                body: JSON.stringify(buildPayload()),
             });
             setResponseBody(created);
-            setMessage(`Created entity.`);
+            setMessage("Created entity.");
             await load();
         } catch (e: any) {
             setError(e?.message ?? "Create failed");
@@ -188,15 +181,15 @@ export function CrudConsolePage() {
             setError("Set ID for update");
             return;
         }
+
         setLoading(true);
         setError(null);
         setMessage(null);
         try {
-            const body = parsePayload();
             const updated = await http<unknown>(joinUrl(endpoint, selectedId, query), {
                 method: "PUT",
                 auth: true,
-                body: JSON.stringify(body),
+                body: JSON.stringify(buildPayload()),
             });
             setResponseBody(updated);
             setMessage("Updated entity.");
@@ -214,6 +207,7 @@ export function CrudConsolePage() {
             setError("Set ID for delete");
             return;
         }
+
         setLoading(true);
         setError(null);
         setMessage(null);
@@ -231,6 +225,13 @@ export function CrudConsolePage() {
             setLoading(false);
         }
     };
+
+    const updateField = (index: number, patch: Partial<PayloadField>) => {
+        setFields((prev) => prev.map((field, i) => (i === index ? { ...field, ...patch } : field)));
+    };
+
+    const addField = () => setFields((prev) => [...prev, { key: "", value: "" }]);
+    const removeField = (index: number) => setFields((prev) => prev.filter((_, i) => i !== index));
 
     return (
         <div className="space-y-6">
@@ -287,68 +288,58 @@ export function CrudConsolePage() {
                 </label>
 
                 <div className="col-span-full flex flex-wrap gap-2">
-                    <button type="button" onClick={() => void load()} className="rounded-xl border px-4 py-2 text-sm">
-                        Load list
-                    </button>
-                    <button type="button" onClick={() => void getById()} className="rounded-xl border px-4 py-2 text-sm">
-                        Get by ID
-                    </button>
-                    <button
-                        type="button"
-                        disabled={resource.readOnly}
-                        onClick={() => void createItem()}
-                        className="rounded-xl border px-4 py-2 text-sm disabled:opacity-50"
-                    >
-                        Create
-                    </button>
-                    <button
-                        type="button"
-                        disabled={resource.readOnly}
-                        onClick={() => void updateItem()}
-                        className="rounded-xl border px-4 py-2 text-sm disabled:opacity-50"
-                    >
-                        Update
-                    </button>
-                    <button
-                        type="button"
-                        disabled={resource.readOnly}
-                        onClick={() => void removeItem()}
-                        className="rounded-xl border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
-                    >
-                        Delete
-                    </button>
+                    <button type="button" onClick={() => void load()} className="rounded-xl border px-4 py-2 text-sm">Load list</button>
+                    <button type="button" onClick={() => void getById()} className="rounded-xl border px-4 py-2 text-sm">Get by ID</button>
+                    <button type="button" disabled={resource.readOnly} onClick={() => void createItem()} className="rounded-xl border px-4 py-2 text-sm disabled:opacity-50">Create</button>
+                    <button type="button" disabled={resource.readOnly} onClick={() => void updateItem()} className="rounded-xl border px-4 py-2 text-sm disabled:opacity-50">Update</button>
+                    <button type="button" disabled={resource.readOnly} onClick={() => void removeItem()} className="rounded-xl border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-50">Delete</button>
+                </div>
+            </div>
+
+            <div className="space-y-2 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
+                <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">Payload fields</div>
+                    <button type="button" onClick={addField} className="rounded-xl border px-3 py-1 text-xs">+ Add field</button>
+                </div>
+                <div className="space-y-2">
+                    {fields.map((field, index) => (
+                        <div key={`${index}-${field.key}`} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                            <input
+                                className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                placeholder="field name"
+                                value={field.key}
+                                onChange={(e) => updateField(index, { key: e.target.value })}
+                            />
+                            <input
+                                className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                                placeholder="value (text/number/true/false/null)"
+                                value={field.value}
+                                onChange={(e) => updateField(index, { value: e.target.value })}
+                            />
+                            <button type="button" onClick={() => removeField(index)} className="rounded-xl border border-red-300 px-3 py-2 text-xs text-red-700">Remove</button>
+                        </div>
+                    ))}
                 </div>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-                <div className="space-y-2">
-                    <div className="text-sm font-medium">JSON payload</div>
-                    <textarea
-                        className="h-80 w-full rounded-2xl border border-neutral-200 bg-white p-3 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-900"
-                        value={payload}
-                        onChange={(e) => setPayload(e.target.value)}
-                    />
-                </div>
-
                 <div className="space-y-2">
                     <div className="text-sm font-medium">List response</div>
                     <pre className="h-80 overflow-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs dark:border-neutral-700 dark:bg-neutral-900">
                         {pretty(rows)}
                     </pre>
                 </div>
-            </div>
 
-            <div className="space-y-2">
-                <div className="text-sm font-medium">Raw response</div>
-                <pre className="max-h-80 overflow-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs dark:border-neutral-700 dark:bg-neutral-900">
-                    {pretty(responseBody)}
-                </pre>
+                <div className="space-y-2">
+                    <div className="text-sm font-medium">Raw response</div>
+                    <pre className="h-80 overflow-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-xs dark:border-neutral-700 dark:bg-neutral-900">
+                        {pretty(responseBody)}
+                    </pre>
+                </div>
             </div>
 
             {loading ? <div className="text-sm">Loading...</div> : null}
-            {message ? (
-                <div className="rounded-xl border border-green-300 bg-green-50 p-3 text-sm text-green-800">{message}</div>
-            ) : null}
+            {message ? <div className="rounded-xl border border-green-300 bg-green-50 p-3 text-sm text-green-800">{message}</div> : null}
             {error ? <div className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
         </div>
     );
