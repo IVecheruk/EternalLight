@@ -44,23 +44,22 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             setUser(me);
             setIsAuthenticated(true);
         } catch {
-            // fallback: держим пользователя авторизованным по токену
-            setIsAuthenticated(true);
-            setUser((prev) => prev ?? { email: "Authenticated user" });
+            localStorage.removeItem(TOKEN_KEY);
+            setUser(null);
+            setIsAuthenticated(false);
         }
     }, []);
+
 
     const register = useCallback(
         async (dto: RegisterRequest) => {
             const res = await authApi.register(dto);
             localStorage.setItem(TOKEN_KEY, res.token);
             setIsAuthenticated(true);
-            setUser({ email: dto.email });
             await refreshMe();
         },
         [refreshMe]
     );
-
     const login = useCallback(
         async (dto: LoginRequest) => {
             const res = await authApi.login(dto);
