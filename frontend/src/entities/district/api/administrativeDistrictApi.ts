@@ -17,30 +17,30 @@ const BASE = "/api/v1/administrative-districts";
 
 export const administrativeDistrictApi = {
     list(): Promise<AdministrativeDistrict[]> {
-        return http<AdministrativeDistrict[]>(BASE, { method: "GET", auth: false });
+        return http<AdministrativeDistrict[]>(BASE, { method: "GET", auth: true });
     },
 
     get(id: number): Promise<AdministrativeDistrict> {
-        return http<AdministrativeDistrict>(`${BASE}/${id}`, { method: "GET", auth: false });
+        return http<AdministrativeDistrict>(`${BASE}/${id}`, { method: "GET", auth: true });
     },
 
     create(data: CreateAdministrativeDistrictRequest): Promise<AdministrativeDistrict> {
         return http<AdministrativeDistrict>(BASE, {
             method: "POST",
-            auth: false,
-            body: JSON.stringify(data),
+            auth: true,
+            body: data,
         });
     },
 
     update(id: number, data: UpdateAdministrativeDistrictRequest): Promise<AdministrativeDistrict> {
         return http<AdministrativeDistrict>(`${BASE}/${id}`, {
             method: "PUT",
-            auth: false,
-            body: JSON.stringify(data),
+            auth: true,
+            body: data,
         });
     },
 
     remove(id: number): Promise<void> {
-        return http<void>(`${BASE}/${id}`, { method: "DELETE", auth: false });
+        return http<void>(`${BASE}/${id}`, { method: "DELETE", auth: true });
     },
 };

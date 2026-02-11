@@ -7,6 +7,6 @@ public class StreetApiMapper {
     private StreetApiMapper() {}
 
     public static StreetResponse toResponse(Street s) {
-        return new StreetResponse(s.getId(), s.getName());
+        return new StreetResponse(s.getId(), s.getName(), s.getAdministrativeDistrictId());
     }
 }

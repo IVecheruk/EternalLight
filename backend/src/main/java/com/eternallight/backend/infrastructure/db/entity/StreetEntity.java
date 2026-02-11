@@ -21,7 +21,11 @@ public class StreetEntity {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
-    public StreetEntity(String name) {
+    @Column(name = "administrative_district_id")
+    private Long administrativeDistrictId;
+
+    public StreetEntity(String name, Long administrativeDistrictId) {
         this.name = name;
+        this.administrativeDistrictId = administrativeDistrictId;
     }
 }

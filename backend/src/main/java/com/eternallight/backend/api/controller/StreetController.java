@@ -22,7 +22,7 @@ public class StreetController {
 
     @PostMapping
     public StreetResponse create(@Valid @RequestBody CreateStreetRequest request) {
-        return StreetApiMapper.toResponse(service.create(request.name()));
+        return StreetApiMapper.toResponse(service.create(request.name(), request.districtId()));
     }
 
     @GetMapping
@@ -40,7 +40,7 @@ public class StreetController {
     @PutMapping("/{id}")
     public StreetResponse update(@PathVariable Long id,
                                  @Valid @RequestBody UpdateStreetRequest request) {
-        return StreetApiMapper.toResponse(service.update(id, request.name()));
+        return StreetApiMapper.toResponse(service.update(id, request.name(), request.districtId()));
     }
 
     @DeleteMapping("/{id}")

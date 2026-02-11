@@ -5,23 +5,34 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="88ffe580-ed76-4451-ab30-0ecab9131250" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/frontend/src/entities/district/api/administrativeDistrictApi.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/shared/ui/TextField.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources/bdedc1b8-555f-44a3-a612-9fb6722aa205.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/bdedc1b8-555f-44a3-a612-9fb6722aa205.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/bdedc1b8-555f-44a3-a612-9fb6722aa205/storage_v2/_src_/database/eternallight.OaGWVA/schema/public.abK9xQ.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/bdedc1b8-555f-44a3-a612-9fb6722aa205/storage_v2/_src_/database/eternallight.OaGWVA/schema/public.abK9xQ.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/http/auth.http" beforeDir="false" afterPath="$PROJECT_DIR$/backend/http/auth.http" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/infrastructure/db/entity/AdministrativeDistrictEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/infrastructure/db/entity/AdministrativeDistrictEntity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/districts/DistrictsPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/districts/DistrictsPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/map/MapPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/map/MapPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/organizations/OrganizationsPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/organizations/OrganizationsPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/shared/ui/Modal/Modal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/shared/ui/Modal/Modal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/shared/ui/TablePage/TablePage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/shared/ui/TablePage/TablePage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/api/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/api/controller/AuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/api/dto/auth/MeResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/api/dto/auth/MeResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/infrastructure/db/entity/UserEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/infrastructure/db/entity/UserEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/layout/AppLayout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/layout/AppLayout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/entities/map/api/mapApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/entities/map/api/mapApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/entities/map/mock/mapMockRepo.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/entities/map/mock/mapMockRepo.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/entities/street/api/streetApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/entities/street/api/streetApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/entities/street/mock/streetMockRepo.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/entities/street/mock/streetMockRepo.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/entities/street/model/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/entities/street/model/types.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/auth/api/authApi.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/features/auth/api/authApi.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/auth/api/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/features/auth/api/types.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/auth/model/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/features/auth/model/AuthContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/auth/model/AuthProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/features/auth/model/AuthProvider.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/lighting-objects/LightingObjectsPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/lighting-objects/LightingObjectsPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/profile/ProfilePage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/profile/ProfilePage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/shared/ui/TextField.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/shared/ui/TextField.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/tsconfig.app.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/tsconfig.app.tsbuildinfo" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="616" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -56,6 +67,10 @@
       </MavenGeneralSettings>
     </option>
   </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -64,27 +79,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/veche/Desktop/SpringTutorial/EternalLight&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "javascript.preferred.runtime.type.id": "node",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/veche/Desktop/SpringTutorial/EternalLight",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;postgresql&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "postgresql"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\veche\Desktop\SpringTutorial\EternalLight\frontend\src\entities\organization\model" />
@@ -116,7 +135,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.27397.103" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
       </set>
     </attachedChunks>
   </component>
@@ -132,6 +151,7 @@
       <workItem from="1770726917440" duration="61000" />
       <workItem from="1770727063631" duration="16000" />
       <workItem from="1770727101625" duration="6000" />
+      <workItem from="1770794023039" duration="104000" />
     </task>
     <servers />
   </component>

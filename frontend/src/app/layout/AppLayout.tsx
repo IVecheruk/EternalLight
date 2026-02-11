@@ -3,15 +3,32 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/features/auth/model/useAuth";
 import { useTheme } from "@/app/theme/ThemeProvider";
 
-const navItems = [
-    { to: "/", label: "Home" },
-    { to: "/organizations", label: "Organizations" },
-    { to: "/districts", label: "Districts" },
-    { to: "/streets", label: "Streets" },
-    { to: "/lighting-objects", label: "Lighting objects" },
-    { to: "/acts", label: "Acts" },
-    { to: "/dictionaries", label: "Dictionaries" },
-    { to: "/map", label: "Map" },
+const navSections = [
+    {
+        title: "Overview",
+        items: [
+            { to: "/", label: "Home" },
+            { to: "/map", label: "Map" },
+            { to: "/all-data", label: "All data" },
+        ],
+    },
+    {
+        title: "Infrastructure",
+        items: [
+            { to: "/organizations", label: "Organizations" },
+            { to: "/districts", label: "Districts" },
+            { to: "/streets", label: "Streets" },
+            { to: "/lighting-objects", label: "Lighting objects" },
+        ],
+    },
+    {
+        title: "Operations",
+        items: [{ to: "/acts", label: "Acts" }],
+    },
+    {
+        title: "Reference",
+        items: [{ to: "/dictionaries", label: "Dictionaries" }],
+    },
 ];
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -33,6 +50,7 @@ export const AppLayout = () => {
     const { theme, toggleTheme } = useTheme();
 
     const [menuOpen, setMenuOpen] = useState(false);
+    const [navOpen, setNavOpen] = useState(true);
     const menuRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -130,17 +148,66 @@ export const AppLayout = () => {
             <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:grid-cols-[240px_1fr]">
                 {/* Sidebar */}
                 <aside className="h-fit rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-                    <div className="px-2 pb-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
-                        NAVIGATION
-                    </div>
+                    {isAuthenticated ? (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => setNavOpen((v) => !v)}
+                                aria-expanded={navOpen}
+                                aria-controls="app-navigation"
+                                className="flex w-full items-center justify-between rounded-xl px-2 pb-2 text-left text-xs font-semibold text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                            >
+                                <span>NAVIGATION</span>
+                                <svg
+                                    viewBox="0 0 20 20"
+                                    fill="none"
+                                    aria-hidden="true"
+                                    className={[
+                                        "h-4 w-4 transition-transform duration-200",
+                                        navOpen ? "rotate-180" : "rotate-0",
+                                    ].join(" ")}
+                                >
+                                    <path
+                                        d="M5 8l5 5 5-5"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                </svg>
+                            </button>
 
-                    <nav className="space-y-1">
-                        {navItems.map((i) => (
-                            <NavLink key={i.to} to={i.to} className={navLinkClass} end={i.to === "/"}>
-                                {i.label}
-                            </NavLink>
-                        ))}
-                    </nav>
+                            <nav
+                                id="app-navigation"
+                                className={[
+                                    "space-y-3 overflow-hidden transition-all duration-200",
+                                    navOpen ? "max-h-[680px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
+                                ].join(" ")}
+                            >
+                                {navSections.map((section) => (
+                                    <div key={section.title} className="space-y-1">
+                                        <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+                                            {section.title}
+                                        </div>
+                                        {section.items.map((i) => (
+                                            <NavLink key={i.to} to={i.to} className={navLinkClass} end={i.to === "/"}>
+                                                {i.label}
+                                            </NavLink>
+                                        ))}
+                                    </div>
+                                ))}
+                            </nav>
+                        </>
+                    ) : (
+                        <div className="space-y-1 px-2 pb-2">
+                            <div className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+                                NAVIGATION
+                            </div>
+                            <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                                Sign in to access navigation.
+                            </div>
+                        </div>
+                    )}
                 </aside>
 
                 {/* Content */}

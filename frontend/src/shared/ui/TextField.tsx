@@ -3,13 +3,15 @@ type Props = {
     value: string;
     placeholder?: string;
     onChange: (v: string) => void;
+    type?: string;
 };
 
-export function TextField({ label, value, placeholder, onChange }: Props) {
+export function TextField({ label, value, placeholder, onChange, type = "text" }: Props) {
     return (
         <div className="space-y-2">
             <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">{label}</label>
             <input
+                type={type}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}

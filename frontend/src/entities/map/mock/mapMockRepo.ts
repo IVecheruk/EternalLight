@@ -10,7 +10,7 @@ function pick<T>(arr: T[]) {
 }
 
 // центр “города” (Рига) — позже можно менять
-const CITY_CENTER = { lat: 56.9496, lng: 24.1052 };
+const CITY_CENTER = { lat: 53.3481, lng: 83.7636 };
 
 function genPoints(count: number): MapPoint[] {
     const statuses: MapPoint["status"][] = ["OK", "OK", "OK", "WARN", "OFF", "FAULT"];

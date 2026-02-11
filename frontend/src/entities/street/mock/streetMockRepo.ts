@@ -1,7 +1,7 @@
 import type { Street } from "../model/types";
 
-type CreateDto = { name: string };
-type UpdateDto = { name: string };
+type CreateDto = { name: string; districtId?: number | null };
+type UpdateDto = { name: string; districtId?: number | null };
 
 const delay = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 const LS_KEY = "mock.streets.v1";
@@ -34,7 +34,7 @@ export const streetMockRepo = {
         await delay();
         const items = read();
         const nextId = items.length ? Math.max(...items.map((x) => x.id)) + 1 : 1;
-        const created: Street = { id: nextId, name: dto.name };
+        const created: Street = { id: nextId, name: dto.name, districtId: dto.districtId ?? null };
         write([created, ...items]);
         return created;
     },
@@ -44,7 +44,7 @@ export const streetMockRepo = {
         const items = read();
         const idx = items.findIndex((x) => x.id === id);
         if (idx === -1) throw new Error("Street not found");
-        const updated: Street = { ...items[idx], name: dto.name };
+        const updated: Street = { ...items[idx], name: dto.name, districtId: dto.districtId ?? null };
         items[idx] = updated;
         write(items);
         return updated;

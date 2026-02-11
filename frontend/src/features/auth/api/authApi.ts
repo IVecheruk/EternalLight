@@ -1,10 +1,11 @@
 import { http } from "@/shared/api/http";
 import type {
     LoginRequest,
+    UpdateProfileRequest,
+    MeResponse,
     RegisterRequest,
     RegisterResponse,
     TokenResponse,
-    MeResponse,
 } from "./types";
 
 const BASE = "/api/v1/auth";
@@ -21,6 +22,12 @@ export const authApi = {
             method: "POST",
             body: dto,
             auth: false,
+        }),
+    updateProfile: (dto: UpdateProfileRequest) =>
+        http<MeResponse>(`${BASE}/me`, {
+            method: "PUT",
+            body: dto,
+            auth: true,
         }),
     me: () => http<MeResponse>(`${BASE}/me`, { method: "GET", auth: true }),
 };

@@ -10,13 +10,13 @@ export const lightingObjectApi = {
         http<LightingObject>(BASE, {
             method: "POST",
             auth: true,
-            body: JSON.stringify(data),
+            body: data,
         }),
     update: (id: number, data: LightingObjectUpsertRequest) =>
         http<LightingObject>(`${BASE}/${id}`, {
             method: "PUT",
             auth: true,
-            body: JSON.stringify(data),
+            body: data,
         }),
     remove: (id: number) => http<void>(`${BASE}/${id}`, { method: "DELETE", auth: true }),
 };

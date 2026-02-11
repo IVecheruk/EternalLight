@@ -34,7 +34,7 @@ export function RegisterPage() {
             // 3) в профиль
             navigate("/profile", { replace: true });
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Registration failed");
+            setError(e instanceof Error ? e.message : "Не удалось зарегистрироваться.");
         } finally {
             setLoading(false);
         }
@@ -57,17 +57,18 @@ export function RegisterPage() {
 
             <div className="space-y-3">
                 <div className="space-y-1">
-                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Email</label>
+                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Эл. почта</label>
                     <input
+                        type="email"
                         className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none dark:border-neutral-800 dark:bg-neutral-950"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
+                        placeholder="name@example.com"
                     />
                 </div>
 
                 <div className="space-y-1">
-                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Password</label>
+                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Пароль</label>
                     <input
                         type="password"
                         className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none dark:border-neutral-800 dark:bg-neutral-950"
@@ -77,7 +78,7 @@ export function RegisterPage() {
                 </div>
 
                 <div className="space-y-1">
-                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Confirm password</label>
+                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Подтвердите пароль</label>
                     <input
                         type="password"
                         className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none dark:border-neutral-800 dark:bg-neutral-950"
@@ -92,7 +93,7 @@ export function RegisterPage() {
                     disabled={loading}
                     className="w-full rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                 >
-                    {loading ? "Creating…" : "Create account"}
+                    {loading ? "Создаем…" : "Зарегистрироваться"}
                 </button>
 
                 <div className="text-center text-sm text-neutral-600 dark:text-neutral-300">

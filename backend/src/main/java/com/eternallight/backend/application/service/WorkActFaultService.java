@@ -4,6 +4,7 @@ import com.eternallight.backend.api.dto.request.AddWorkActFaultRequest;
 import com.eternallight.backend.api.dto.request.UpdateWorkActFaultRequest;
 import com.eternallight.backend.domain.exception.NotFoundException;
 import com.eternallight.backend.domain.model.WorkActFault;
+import com.eternallight.backend.infrastructure.notification.NotificationService;
 import com.eternallight.backend.infrastructure.db.entity.WorkActFaultEntity;
 import com.eternallight.backend.infrastructure.db.repository.FaultTypeRepository;
 import com.eternallight.backend.infrastructure.db.repository.WorkActFaultRepository;
@@ -19,25 +20,26 @@ public class WorkActFaultService {
     private final WorkActFaultRepository repo;
     private final WorkActRepository workActRepository;
     private final FaultTypeRepository faultTypeRepository;
+    private final NotificationService notificationService;
 
     public WorkActFaultService(
             WorkActFaultRepository repo,
             WorkActRepository workActRepository,
-            FaultTypeRepository faultTypeRepository
+            FaultTypeRepository faultTypeRepository,
+            NotificationService notificationService
     ) {
         this.repo = repo;
         this.workActRepository = workActRepository;
         this.faultTypeRepository = faultTypeRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
     public WorkActFault add(Long workActId, AddWorkActFaultRequest r) {
-        if (!workActRepository.existsById(workActId)) {
-            throw new NotFoundException("Work act not found: id=" + workActId);
-        }
-        if (!faultTypeRepository.existsById(r.faultTypeId())) {
-            throw new NotFoundException("Fault type not found: id=" + r.faultTypeId());
-        }
+        var workAct = workActRepository.findById(workActId)
+                .orElseThrow(() -> new NotFoundException("Work act not found: id=" + workActId));
+        var faultType = faultTypeRepository.findById(r.faultTypeId())
+                .orElseThrow(() -> new NotFoundException("Fault type not found: id=" + r.faultTypeId()));
 
         WorkActFaultEntity e = new WorkActFaultEntity(
                 workActId,
@@ -45,7 +47,16 @@ public class WorkActFaultService {
                 r.isSelected(),
                 r.otherText()
         );
-        return toDomain(repo.save(e));
+        WorkActFault saved = toDomain(repo.save(e));
+        notificationService.sendFaultAdded(
+                workActId,
+                workAct.getActNumber(),
+                faultType.getId(),
+                faultType.getName(),
+                r.isSelected(),
+                r.otherText()
+        );
+        return saved;
     }
 
     @Transactional(readOnly = true)

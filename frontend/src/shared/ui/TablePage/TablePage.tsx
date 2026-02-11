@@ -101,7 +101,7 @@ export function TablePage<Row>(props: Props<Row>) {
                         disabled={loading}
                         className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
                     >
-                        {loading ? "Loading…" : "Refresh"}
+                        {loading ? "Загрузка..." : "Обновить"}
                     </button>
 
                     {canCreate && renderCreate && (
@@ -110,7 +110,7 @@ export function TablePage<Row>(props: Props<Row>) {
                             onClick={() => setCreateOpen(true)}
                             className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                         >
-                            + Create
+                            + Добавить
                         </button>
                     )}
                 </div>
@@ -132,7 +132,7 @@ export function TablePage<Row>(props: Props<Row>) {
                                     {c.header}
                                 </th>
                             ))}
-                            {hasActions && <th className="px-4 py-3 font-semibold">Actions</th>}
+                            {hasActions && <th className="px-4 py-3 font-semibold">Действия</th>}
                         </tr>
                         </thead>
                         <tbody>
@@ -156,7 +156,7 @@ export function TablePage<Row>(props: Props<Row>) {
                                                     onClick={() => setEditRow(row)}
                                                     className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
                                                 >
-                                                    Edit
+                                                    Редактировать
                                                 </button>
                                             )}
                                             {canRemove && remove && (
@@ -165,7 +165,7 @@ export function TablePage<Row>(props: Props<Row>) {
                                                     onClick={() => void onRemove(row)}
                                                     className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs text-red-700 hover:bg-red-50 dark:bg-neutral-950 dark:hover:bg-neutral-900"
                                                 >
-                                                    Delete
+                                                    Удалить
                                                 </button>
                                             )}
                                         </div>
@@ -180,7 +180,7 @@ export function TablePage<Row>(props: Props<Row>) {
                                     colSpan={columns.length + (hasActions ? 1 : 0)}
                                     className="px-4 py-10 text-center text-sm text-neutral-500"
                                 >
-                                    No data
+                                    Нет данных
                                 </td>
                             </tr>
                         )}
@@ -190,7 +190,7 @@ export function TablePage<Row>(props: Props<Row>) {
             </div>
 
             {/* Create modal */}
-            <Modal open={createOpen} title={`Create: ${title}`} onClose={() => setCreateOpen(false)}>
+            <Modal open={createOpen} title={`Создать: ${title}`} onClose={() => setCreateOpen(false)}>
                 {renderCreate?.({
                     onDone: async () => {
                         setCreateOpen(false);
@@ -201,7 +201,7 @@ export function TablePage<Row>(props: Props<Row>) {
             </Modal>
 
             {/* Edit modal */}
-            <Modal open={!!editRow} title={`Edit: ${title}`} onClose={() => setEditRow(null)}>
+            <Modal open={!!editRow} title={`Редактировать: ${title}`} onClose={() => setEditRow(null)}>
                 {editRow &&
                     renderEdit?.(editRow, {
                         onDone: async () => {

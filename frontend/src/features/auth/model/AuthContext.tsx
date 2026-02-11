@@ -5,6 +5,8 @@ export type AuthContextValue = {
     isReady: boolean;
     isAuthenticated: boolean;
     user: MeResponse | null;
+    roles: string[];
+    hasRole: (...roles: string[]) => boolean;
 
     login: (dto: LoginRequest) => Promise<void>;
     register: (dto: RegisterRequest) => Promise<void>;

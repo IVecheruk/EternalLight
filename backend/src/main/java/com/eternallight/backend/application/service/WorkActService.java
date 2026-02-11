@@ -8,6 +8,7 @@ import com.eternallight.backend.infrastructure.db.entity.WorkActEntity;
 import com.eternallight.backend.infrastructure.db.repository.LightingObjectRepository;
 import com.eternallight.backend.infrastructure.db.repository.OrganizationRepository;
 import com.eternallight.backend.infrastructure.db.repository.WorkActRepository;
+import com.eternallight.backend.infrastructure.notification.NotificationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,15 +20,18 @@ public class WorkActService {
     private final WorkActRepository workActRepository;
     private final OrganizationRepository organizationRepository;
     private final LightingObjectRepository lightingObjectRepository;
+    private final NotificationService notificationService;
 
     public WorkActService(
             WorkActRepository workActRepository,
             OrganizationRepository organizationRepository,
-            LightingObjectRepository lightingObjectRepository
+            LightingObjectRepository lightingObjectRepository,
+            NotificationService notificationService
     ) {
         this.workActRepository = workActRepository;
         this.organizationRepository = organizationRepository;
         this.lightingObjectRepository = lightingObjectRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -108,6 +112,9 @@ public class WorkActService {
 
         validateRefs(r.executorOrgId(), r.lightingObjectId());
 
+        boolean wasClosed = existing.getWorkFinishedAt() != null;
+        boolean willBeClosed = r.workFinishedAt() != null;
+
         existing.setActNumber(r.actNumber());
         existing.setActCompiledOn(r.actCompiledOn());
         existing.setActPlace(r.actPlace());
@@ -137,7 +144,11 @@ public class WorkActService {
         existing.setCopiesCount(r.copiesCount());
         existing.setAcceptedWithoutRemarks(r.acceptedWithoutRemarks());
 
-        return toDomain(workActRepository.save(existing));
+        WorkAct saved = toDomain(workActRepository.save(existing));
+        if (!wasClosed && willBeClosed) {
+            notificationService.sendWorkActClosed(saved);
+        }
+        return saved;
     }
 
     @Transactional
