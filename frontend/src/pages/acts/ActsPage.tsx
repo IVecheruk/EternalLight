@@ -40,6 +40,30 @@ const blank: WorkActUpsertRequest = {
     acceptedWithoutRemarks: null,
 };
 
+const nowIso = () => new Date().toISOString();
+
+const formatDateTime = (value: string | null) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString("ru-RU");
+};
+
+const toInputDateTime = (value: string | null) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const fromInputDateTime = (value: string) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString();
+};
+
 export function ActsPage() {
     const [items, setItems] = useState<WorkAct[]>([]);
     const [page, setPage] = useState(0);
@@ -113,6 +137,38 @@ export function ActsPage() {
         }
     };
 
+    const buildPayload = (act: WorkAct): WorkActUpsertRequest => {
+        const { id: _id, ...payload } = act;
+        return payload;
+    };
+
+    const updateQuick = async (act: WorkAct, patch: Partial<WorkActUpsertRequest>, fallbackError: string) => {
+        try {
+            setError(null);
+            await workActApi.update(act.id, { ...buildPayload(act), ...patch });
+            await load(page);
+        } catch (e: any) {
+            setError(e?.message ?? fallbackError);
+        }
+    };
+
+    const startNow = async (act: WorkAct) => {
+        if (act.workStartedAt) return;
+        await updateQuick(act, { workStartedAt: nowIso() }, "Не удалось установить время начала.");
+    };
+
+    const closeNow = async (act: WorkAct) => {
+        if (act.workFinishedAt) return;
+        if (!confirm("Закрыть акт сейчас?")) return;
+        await updateQuick(act, { workFinishedAt: nowIso() }, "Не удалось закрыть акт.");
+    };
+
+    const reopenAct = async (act: WorkAct) => {
+        if (!act.workFinishedAt) return;
+        if (!confirm("Открыть акт снова?")) return;
+        await updateQuick(act, { workFinishedAt: null }, "Не удалось открыть акт.");
+    };
+
     const remove = async (id: number) => {
         if (!confirm("Удалить акт?")) return;
         try {
@@ -126,7 +182,7 @@ export function ActsPage() {
     return (
         <PageShell>
             <PageHeader
-                title="Acts"
+                title="Акты работ"
                 description="Реестр актов с фильтрами, пагинацией и формой создания/редактирования."
                 actions={
                     <button
@@ -137,7 +193,7 @@ export function ActsPage() {
                         }}
                         className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
                     >
-                        + New act
+                        + Новый акт
                     </button>
                 }
             />
@@ -159,55 +215,90 @@ export function ActsPage() {
                         <option key={o.id} value={o.id}>{o.fullName}</option>
                     ))}
                 </select>
-                <button type="button" onClick={() => void load(0)} className="rounded-xl border border-neutral-200 px-4 py-2 text-sm">Apply</button>
+                <button type="button" onClick={() => void load(0)} className="rounded-xl border border-neutral-200 px-4 py-2 text-sm">Применить</button>
             </div>
 
-            {loading ? <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm">Loading...</div> : null}
+            {loading ? <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm">Загрузка...</div> : null}
             {!loading && error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">{error}</div> : null}
 
             {!loading && !error ? (
                 <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-                    <div className="border-b border-neutral-200 px-5 py-3 text-sm font-medium">Total: {total}</div>
+                    <div className="border-b border-neutral-200 px-5 py-3 text-sm font-medium">Всего: {total}</div>
                     {items.length === 0 ? (
                         <div className="px-5 py-6 text-sm text-neutral-600">По текущим фильтрам актов нет.</div>
                     ) : (
                         <ul className="divide-y divide-neutral-200">
-                            {items.map((a) => (
-                                <li key={a.id} className="px-5 py-4">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0 text-sm">
-                                            <div className="font-semibold">{a.actNumber || `Акт #${a.id}`}</div>
-                                            <div className="text-xs text-neutral-600 mt-1">Дата: {a.actCompiledOn || "—"} • Место: {a.actPlace || "—"}</div>
-                                            <div className="text-xs text-neutral-600 mt-1">Сумма: {a.grandTotalAmount ?? 0} • Принят: {a.acceptedWithoutRemarks ? "Да" : "Нет"}</div>
+                            {items.map((a) => {
+                                const isClosed = !!a.workFinishedAt;
+
+                                return (
+                                    <li key={a.id} className="px-5 py-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0 text-sm">
+                                                <div className="font-semibold">{a.actNumber || `Акт #${a.id}`}</div>
+                                                <div className="text-xs text-neutral-600 mt-1">Дата: {a.actCompiledOn || "—"} • Место: {a.actPlace || "—"}</div>
+                                                <div className="text-xs text-neutral-600 mt-1">Начало: {formatDateTime(a.workStartedAt)} • Окончание: {formatDateTime(a.workFinishedAt)}</div>
+                                                <div className={`text-xs mt-1 ${isClosed ? "text-emerald-600" : "text-amber-600"}`}>
+                                                    Статус: {isClosed ? "Закрыт" : "Открыт"}
+                                                </div>
+                                                <div className="text-xs text-neutral-600 mt-1">Сумма: {a.grandTotalAmount ?? 0} • Принят: {a.acceptedWithoutRemarks ? "Да" : "Нет"}</div>
+                                            </div>
+                                            <div className="flex flex-wrap items-start justify-end gap-2">
+                                                {!a.workStartedAt && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void startNow(a)}
+                                                        className="rounded-xl border border-neutral-200 px-3 py-2 text-xs"
+                                                    >
+                                                        Начать сейчас
+                                                    </button>
+                                                )}
+                                                {!a.workFinishedAt && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void closeNow(a)}
+                                                        className="rounded-xl border border-emerald-200 px-3 py-2 text-xs text-emerald-700"
+                                                    >
+                                                        Закрыть акт
+                                                    </button>
+                                                )}
+                                                {a.workFinishedAt && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void reopenAct(a)}
+                                                        className="rounded-xl border border-neutral-200 px-3 py-2 text-xs"
+                                                    >
+                                                        Открыть
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelected(a);
+                                                        setForm({ ...a });
+                                                        setEditOpen(true);
+                                                    }}
+                                                    className="rounded-xl border border-neutral-200 px-3 py-2 text-xs"
+                                                >
+                                                    Редактировать
+                                                </button>
+                                                <button type="button" onClick={() => void remove(a.id)} className="rounded-xl border border-red-200 px-3 py-2 text-xs text-red-700">Удалить</button>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelected(a);
-                                                    setForm({ ...a });
-                                                    setEditOpen(true);
-                                                }}
-                                                className="rounded-xl border border-neutral-200 px-3 py-2 text-xs"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button type="button" onClick={() => void remove(a.id)} className="rounded-xl border border-red-200 px-3 py-2 text-xs text-red-700">Delete</button>
-                                        </div>
-                                    </div>
-                                </li>
-                            ))}
+                                    </li>
+                                );
+                            })}
                         </ul>
                     )}
                     <div className="flex items-center justify-between border-t border-neutral-200 px-5 py-3 text-sm">
-                        <button disabled={page <= 0} onClick={() => void load(page - 1)} className="rounded-lg border px-3 py-1 disabled:opacity-50">Prev</button>
-                        <span>Page {page + 1} / {Math.max(totalPages, 1)}</span>
-                        <button disabled={page + 1 >= totalPages} onClick={() => void load(page + 1)} className="rounded-lg border px-3 py-1 disabled:opacity-50">Next</button>
+                        <button disabled={page <= 0} onClick={() => void load(page - 1)} className="rounded-lg border px-3 py-1 disabled:opacity-50">Назад</button>
+                        <span>Страница {page + 1} / {Math.max(totalPages, 1)}</span>
+                        <button disabled={page + 1 >= totalPages} onClick={() => void load(page + 1)} className="rounded-lg border px-3 py-1 disabled:opacity-50">Вперед</button>
                     </div>
                 </div>
             ) : null}
 
-            <Modal open={createOpen} title="Create work act" onClose={() => setCreateOpen(false)}>
+            <Modal open={createOpen} title="Создание акта" onClose={() => setCreateOpen(false)}>
                 <WorkActForm
                     form={form}
                     onChange={setForm}
@@ -215,11 +306,11 @@ export function ActsPage() {
                     lightingObjects={lightingObjects}
                     onCancel={() => setCreateOpen(false)}
                     onSubmit={() => void saveCreate()}
-                    submitLabel="Create"
+                    submitLabel="Создать"
                 />
             </Modal>
 
-            <Modal open={editOpen} title="Update work act" onClose={() => setEditOpen(false)}>
+            <Modal open={editOpen} title="Редактирование акта" onClose={() => setEditOpen(false)}>
                 <WorkActForm
                     form={form}
                     onChange={setForm}
@@ -227,7 +318,7 @@ export function ActsPage() {
                     lightingObjects={lightingObjects}
                     onCancel={() => setEditOpen(false)}
                     onSubmit={() => void saveEdit()}
-                    submitLabel="Save"
+                    submitLabel="Сохранить"
                 />
             </Modal>
         </PageShell>
@@ -243,21 +334,191 @@ function WorkActForm(props: {
     onSubmit: () => void;
     submitLabel: string;
 }) {
-    const set = (key: keyof WorkActUpsertRequest, value: any) => props.onChange({ ...props.form, [key]: value });
+    const set = (key: keyof WorkActUpsertRequest, value: WorkActUpsertRequest[keyof WorkActUpsertRequest]) =>
+        props.onChange({ ...props.form, [key]: value });
+    const setDate = (key: keyof WorkActUpsertRequest, value: string) =>
+        set(key, value === "" ? null : value);
 
     return (
-        <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-                <Field label="Act number" value={props.form.actNumber ?? ""} onChange={(v) => set("actNumber", v || null)} />
-                <Field label="Act date" value={props.form.actCompiledOn ?? ""} onChange={(v) => set("actCompiledOn", v || null)} type="date" />
-                <Field label="Place" value={props.form.actPlace ?? ""} onChange={(v) => set("actPlace", v || null)} />
-                <label className="space-y-1 text-xs"><span>Executor org</span><select value={props.form.executorOrgId} onChange={(e) => set("executorOrgId", Number(e.target.value))} className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"><option value={0}>Выбери…</option>{props.organizations.map((o)=><option key={o.id} value={o.id}>{o.fullName}</option>)}</select></label>
-                <label className="space-y-1 text-xs"><span>Lighting object</span><select value={props.form.lightingObjectId ?? 0} onChange={(e) => set("lightingObjectId", Number(e.target.value) || null)} className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"><option value={0}>Не задан</option>{props.lightingObjects.map((o)=><option key={o.id} value={o.id}>#{o.id} {o.houseLandmark || ""}</option>)}</select></label>
-                <Field label="Grand total" value={String(props.form.grandTotalAmount ?? "")} onChange={(v) => set("grandTotalAmount", v === "" ? null : Number(v))} />
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="space-y-2">
+                <div className="text-sm font-semibold">Основные данные</div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <Field label="Номер акта" value={props.form.actNumber ?? ""} onChange={(v) => set("actNumber", v || null)} />
+                    <Field label="Дата акта" value={props.form.actCompiledOn ?? ""} onChange={(v) => setDate("actCompiledOn", v)} type="date" />
+                    <Field label="Место" value={props.form.actPlace ?? ""} onChange={(v) => set("actPlace", v || null)} />
+                    <Field label="Структурное подразделение" value={props.form.structuralUnit ?? ""} onChange={(v) => set("structuralUnit", v || null)} />
+                    <SelectField
+                        label="Организация-исполнитель"
+                        value={props.form.executorOrgId}
+                        onChange={(v) => set("executorOrgId", v)}
+                        options={props.organizations.map((o) => ({ value: o.id, label: o.fullName }))}
+                        placeholder="Выберите..."
+                    />
+                    <SelectField
+                        label="Объект освещения"
+                        value={props.form.lightingObjectId ?? 0}
+                        onChange={(v) => set("lightingObjectId", v || null)}
+                        options={props.lightingObjects.map((o) => ({ value: o.id, label: `#${o.id} ${o.houseLandmark || ""}`.trim() }))}
+                        placeholder="Не задан"
+                    />
+                    <NumberField
+                        label="Количество экземпляров"
+                        value={props.form.copiesCount}
+                        onChange={(v) => set("copiesCount", v)}
+                    />
+                </div>
             </div>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!props.form.acceptedWithoutRemarks} onChange={(e) => set("acceptedWithoutRemarks", e.target.checked)} /> Принят без замечаний</label>
+
+            <div className="space-y-2">
+                <div className="text-sm font-semibold">Время работ</div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <DateTimeField
+                        label="Начало работ"
+                        value={props.form.workStartedAt}
+                        onChange={(v) => set("workStartedAt", v)}
+                    />
+                    <DateTimeField
+                        label="Окончание работ"
+                        value={props.form.workFinishedAt}
+                        onChange={(v) => set("workFinishedAt", v)}
+                    />
+                    <NumberField
+                        label="Общая длительность, мин"
+                        value={props.form.totalDurationMinutes}
+                        onChange={(v) => set("totalDurationMinutes", v)}
+                        step="1"
+                    />
+                    <NumberField
+                        label="Фактическое время, мин"
+                        value={props.form.actualWorkMinutes}
+                        onChange={(v) => set("actualWorkMinutes", v)}
+                        step="1"
+                    />
+                    <NumberField
+                        label="Простой, мин"
+                        value={props.form.downtimeMinutes}
+                        onChange={(v) => set("downtimeMinutes", v)}
+                        step="1"
+                    />
+                </div>
+                <TextArea
+                    label="Причина простоя"
+                    value={props.form.downtimeReason ?? ""}
+                    onChange={(v) => set("downtimeReason", v || null)}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <div className="text-sm font-semibold">Неисправности</div>
+                <TextArea
+                    label="Описание неисправности"
+                    value={props.form.faultDetails ?? ""}
+                    onChange={(v) => set("faultDetails", v || null)}
+                />
+                <TextArea
+                    label="Причина неисправности"
+                    value={props.form.faultCause ?? ""}
+                    onChange={(v) => set("faultCause", v || null)}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <div className="text-sm font-semibold">Качество</div>
+                <TextArea
+                    label="Замечания по качеству"
+                    value={props.form.qualityRemarks ?? ""}
+                    onChange={(v) => set("qualityRemarks", v || null)}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <div className="text-sm font-semibold">Суммы</div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <NumberField
+                        label="Прочие расходы, ₽"
+                        value={props.form.otherExpensesAmount}
+                        onChange={(v) => set("otherExpensesAmount", v)}
+                        step="0.01"
+                    />
+                    <NumberField
+                        label="Материалы, ₽"
+                        value={props.form.materialsTotalAmount}
+                        onChange={(v) => set("materialsTotalAmount", v)}
+                        step="0.01"
+                    />
+                    <NumberField
+                        label="Работы, ₽"
+                        value={props.form.worksTotalAmount}
+                        onChange={(v) => set("worksTotalAmount", v)}
+                        step="0.01"
+                    />
+                    <NumberField
+                        label="Транспорт, ₽"
+                        value={props.form.transportTotalAmount}
+                        onChange={(v) => set("transportTotalAmount", v)}
+                        step="0.01"
+                    />
+                    <NumberField
+                        label="Итого, ₽"
+                        value={props.form.grandTotalAmount}
+                        onChange={(v) => set("grandTotalAmount", v)}
+                        step="0.01"
+                    />
+                </div>
+                <TextArea
+                    label="Итого прописью"
+                    value={props.form.grandTotalInWords ?? ""}
+                    onChange={(v) => set("grandTotalInWords", v || null)}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <div className="text-sm font-semibold">Гарантия</div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <NumberField
+                        label="Гарантия на работы, мес"
+                        value={props.form.warrantyWorkMonths}
+                        onChange={(v) => set("warrantyWorkMonths", v)}
+                        step="1"
+                    />
+                    <Field
+                        label="Начало гарантии"
+                        value={props.form.warrantyWorkStart ?? ""}
+                        onChange={(v) => setDate("warrantyWorkStart", v)}
+                        type="date"
+                    />
+                    <Field
+                        label="Конец гарантии"
+                        value={props.form.warrantyWorkEnd ?? ""}
+                        onChange={(v) => setDate("warrantyWorkEnd", v)}
+                        type="date"
+                    />
+                    <NumberField
+                        label="Гарантия на оборудование, мес"
+                        value={props.form.warrantyEquipmentMonths}
+                        onChange={(v) => set("warrantyEquipmentMonths", v)}
+                        step="1"
+                    />
+                </div>
+                <TextArea
+                    label="Условия гарантии"
+                    value={props.form.warrantyTerms ?? ""}
+                    onChange={(v) => set("warrantyTerms", v || null)}
+                />
+            </div>
+
+            <label className="flex items-center gap-2 text-sm">
+                <input
+                    type="checkbox"
+                    checked={!!props.form.acceptedWithoutRemarks}
+                    onChange={(e) => set("acceptedWithoutRemarks", e.target.checked)}
+                />
+                Принят без замечаний
+            </label>
+
             <div className="flex items-center justify-end gap-2 pt-1">
-                <button type="button" onClick={props.onCancel} className="rounded-xl border border-neutral-200 px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={props.onCancel} className="rounded-xl border border-neutral-200 px-4 py-2 text-sm">Отмена</button>
                 <button type="button" onClick={props.onSubmit} className="rounded-xl bg-neutral-900 px-4 py-2 text-sm text-white">{props.submitLabel}</button>
             </div>
         </div>
@@ -269,6 +530,90 @@ function Field(props: { label: string; value: string; onChange: (v: string) => v
         <label className="space-y-1 text-xs">
             <span>{props.label}</span>
             <input type={props.type ?? "text"} value={props.value} onChange={(e) => props.onChange(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm" />
+        </label>
+    );
+}
+
+function NumberField(props: { label: string; value: number | null; onChange: (v: number | null) => void; step?: string }) {
+    return (
+        <label className="space-y-1 text-xs">
+            <span>{props.label}</span>
+            <input
+                type="number"
+                step={props.step ?? "1"}
+                value={props.value ?? ""}
+                onChange={(e) => props.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+            />
+        </label>
+    );
+}
+
+function TextArea(props: { label: string; value: string; onChange: (v: string) => void }) {
+    return (
+        <label className="space-y-1 text-xs">
+            <span>{props.label}</span>
+            <textarea
+                value={props.value}
+                onChange={(e) => props.onChange(e.target.value)}
+                className="min-h-[80px] w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+            />
+        </label>
+    );
+}
+
+function SelectField(props: {
+    label: string;
+    value: number;
+    onChange: (v: number) => void;
+    options: { value: number; label: string }[];
+    placeholder: string;
+}) {
+    return (
+        <label className="space-y-1 text-xs">
+            <span>{props.label}</span>
+            <select
+                value={props.value}
+                onChange={(e) => props.onChange(Number(e.target.value))}
+                className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+            >
+                <option value={0}>{props.placeholder}</option>
+                {props.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                        {o.label}
+                    </option>
+                ))}
+            </select>
+        </label>
+    );
+}
+
+function DateTimeField(props: { label: string; value: string | null; onChange: (v: string | null) => void }) {
+    return (
+        <label className="space-y-1 text-xs">
+            <span>{props.label}</span>
+            <input
+                type="datetime-local"
+                value={toInputDateTime(props.value)}
+                onChange={(e) => props.onChange(fromInputDateTime(e.target.value))}
+                className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+            />
+            <div className="flex items-center gap-2 pt-1">
+                <button
+                    type="button"
+                    onClick={() => props.onChange(nowIso())}
+                    className="rounded-lg border border-neutral-200 px-2 py-1 text-[11px]"
+                >
+                    Сейчас
+                </button>
+                <button
+                    type="button"
+                    onClick={() => props.onChange(null)}
+                    className="rounded-lg border border-neutral-200 px-2 py-1 text-[11px]"
+                >
+                    Очистить
+                </button>
+            </div>
         </label>
     );
 }

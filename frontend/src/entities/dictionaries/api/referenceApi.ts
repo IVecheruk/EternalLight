@@ -21,14 +21,14 @@ function createCrud(baseUrl: string, options?: { readOnly?: boolean; noGetById?:
             http<Entity>(baseUrl, {
                 method: "POST",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         update: (id, data) => {
             if (options?.readOnly) throw new Error(`Update is not supported for ${baseUrl}`);
             return http<Entity>(`${baseUrl}/${id}`, {
                 method: "PUT",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             });
         },
         remove: (id) => {

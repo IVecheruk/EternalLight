@@ -19,13 +19,13 @@ function createNestedCrud(baseSuffix: string): NestedResourceApi {
             http<Entity>(`/api/v1/work-acts/${workActId}/${baseSuffix}`, {
                 method: "POST",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         update: (workActId, id, data) =>
             http<Entity>(`/api/v1/work-acts/${workActId}/${baseSuffix}/${id}`, {
                 method: "PUT",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         remove: (workActId, id) => http<void>(`/api/v1/work-acts/${workActId}/${baseSuffix}/${id}`, { method: "DELETE", auth: true }),
     };
@@ -38,13 +38,13 @@ export const workActRelationsApi = {
             http<Entity>(`/api/v1/work-acts/${workActId}/basis`, {
                 method: "POST",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         update: (workActId: number, workBasisTypeId: number, data: Entity) =>
             http<Entity>(`/api/v1/work-acts/${workActId}/basis/${workBasisTypeId}`, {
                 method: "PUT",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         remove: (workActId: number, workBasisTypeId: number) =>
             http<void>(`/api/v1/work-acts/${workActId}/basis/${workBasisTypeId}`, { method: "DELETE", auth: true }),
@@ -55,13 +55,13 @@ export const workActRelationsApi = {
             http<Entity>(`/api/v1/work-acts/${workActId}/faults`, {
                 method: "POST",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         update: (workActId: number, faultTypeId: number, data: Entity) =>
             http<Entity>(`/api/v1/work-acts/${workActId}/faults/${faultTypeId}`, {
                 method: "PUT",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         remove: (workActId: number, faultTypeId: number) =>
             http<void>(`/api/v1/work-acts/${workActId}/faults/${faultTypeId}`, { method: "DELETE", auth: true }),
@@ -72,13 +72,13 @@ export const workActRelationsApi = {
             http<Entity>(`/api/v1/work-acts/${workActId}/brigade`, {
                 method: "POST",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         update: (workActId: number, memberId: number, data: Entity) =>
             http<Entity>(`/api/v1/work-acts/${workActId}/brigade/${memberId}`, {
                 method: "PUT",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         remove: (workActId: number, memberId: number) =>
             http<void>(`/api/v1/work-acts/${workActId}/brigade/${memberId}`, { method: "DELETE", auth: true }),
@@ -89,7 +89,7 @@ export const workActRelationsApi = {
             http<Entity>(`/api/v1/work-acts/${workActId}/approval`, {
                 method: "PUT",
                 auth: true,
-                body: JSON.stringify(data),
+                body: data,
             }),
         remove: (workActId: number) => http<void>(`/api/v1/work-acts/${workActId}/approval`, { method: "DELETE", auth: true }),
     },
