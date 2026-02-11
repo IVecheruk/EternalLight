@@ -1,15 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { AuthContext } from "./AuthContext";
-import type { LoginRequest } from "./AuthContext";
-import { authApi } from "../api/authApi";
-import type { MeResponse } from "../api/types";
+import { authApi } from "@/features/auth/api/authApi";
+import type { LoginRequest, RegisterRequest, MeResponse } from "@/features/auth/api/types";
+import { AuthContext, type AuthContextValue } from "./AuthContext";
 
 const TOKEN_KEY = "accessToken";
 
-/**
- * Важно: даже если backend сейчас даёт 403/400 — фронт не должен падать.
- * Он просто будет считать юзера гостем и жить дальше.
- */
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     const [isReady, setIsReady] = useState(false);
     const [user, setUser] = useState<MeResponse | null>(null);
@@ -28,12 +23,12 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             setIsAuthenticated(false);
             return;
         }
+
         try {
             const me = await authApi.me();
             setUser(me);
             setIsAuthenticated(true);
         } catch {
-            // токен плохой или не отправился — сбрасываем
             localStorage.removeItem(TOKEN_KEY);
             setUser(null);
             setIsAuthenticated(false);
@@ -43,11 +38,21 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     const login = useCallback(
         async (dto: LoginRequest) => {
             const res = await authApi.login(dto);
-            localStorage.setItem(TOKEN_KEY, res.token);
-            setIsAuthenticated(true);
+            const token = res.accessToken ?? res.token;
+            if (!token) throw new Error("Missing access token");
+            localStorage.setItem(TOKEN_KEY, token);
             await refreshMe();
         },
         [refreshMe]
+    );
+
+    // регистрация без роли, роль назначит админ
+    const register = useCallback(
+        async (dto: RegisterRequest) => {
+            await authApi.register(dto);
+            await login({ email: dto.email, password: dto.password });
+        },
+        [login]
     );
 
     useEffect(() => {
@@ -57,16 +62,17 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         })();
     }, [refreshMe]);
 
-    const value = useMemo(
+    const value = useMemo<AuthContextValue>(
         () => ({
             isReady,
             isAuthenticated,
             user,
             login,
+            register,
             logout,
             refreshMe,
         }),
-        [isReady, isAuthenticated, user, login, logout, refreshMe]
+        [isReady, isAuthenticated, user, login, register, logout, refreshMe]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

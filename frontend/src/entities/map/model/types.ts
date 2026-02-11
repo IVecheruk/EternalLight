@@ -11,6 +11,12 @@ export type MapPoint = {
     updatedAt: string;
 };
 
+export type MapHeatCell = {
+    lat: number;
+    lng: number;
+    intensity: number; // 0..1
+};
+
 export type MapDataSummary = {
     points: number;
     faults: number;
@@ -22,6 +28,7 @@ export type MapDataSummary = {
 export type MapDataResponse = {
     summary: MapDataSummary;
     points: MapPoint[];
+    heat?: MapHeatCell[];
 };
 
 export type MapLoadParams = {

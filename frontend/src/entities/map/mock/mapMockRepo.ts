@@ -24,7 +24,7 @@ function genPoints(count: number): MapPoint[] {
         const status = pick(statuses);
 
         return {
-            id: i + 1,
+            id: `pt-${i + 1}`,
             name: `Pole #${i + 1}`,
             lat,
             lng,

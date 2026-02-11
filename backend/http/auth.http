@@ -1,11 +1,1 @@
-POST http://localhost:8080/api/v1/auth/login
-Content-Type: application/json
-
-{
-  "email": "admin@eternallight.local",
-  "password": "admin"
-}
-
-###
-GET http://localhost:8080/api/v1/auth/me
-Authorization: Bearer <eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBldGVybmFsbGlnaHQubG9jYWwiLCJ1aWQiOjEsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc3MDY4NDMyNSwiZXhwIjoxNzcwNjg3OTI1fQ.ZuNBGpRnS05hGkiqgq_sM7l5arUQ00M4Ety_UaEpm7o>
+GET http://localhost:8080/api/v1/administrative-districts

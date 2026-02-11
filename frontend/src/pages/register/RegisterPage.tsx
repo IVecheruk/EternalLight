@@ -1,28 +1,40 @@
 import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
+import { authApi } from "@/features/auth/api/authApi"; // подстрой под свой импорт
 import { useAuth } from "@/features/auth/model/useAuth";
 
-export function LoginPage() {
+export function RegisterPage() {
     const { isAuthenticated, login } = useAuth();
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [password2, setPassword2] = useState("");
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // ✅ если уже залогинен — не показываем страницу
     if (isAuthenticated) return <Navigate to="/profile" replace />;
 
     const submit = async () => {
+        if (password !== password2) {
+            setError("Пароли не совпадают.");
+            return;
+        }
         try {
             setLoading(true);
             setError(null);
+
+            // 1) регистрируем
+            await authApi.register({ email: email.trim(), password });
+
+            // 2) логинимся и получаем токен
             await login({ email: email.trim(), password });
-            navigate("/profile", { replace: true }); // ✅
+
+            // 3) в профиль
+            navigate("/profile", { replace: true });
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Login failed");
+            setError(e instanceof Error ? e.message : "Registration failed");
         } finally {
             setLoading(false);
         }
@@ -30,10 +42,10 @@ export function LoginPage() {
 
     return (
         <div className="mx-auto max-w-md space-y-6">
-            <div>
-                <h1 className="text-2xl font-semibold">Login</h1>
+            <div className="text-center">
+                <h1 className="text-2xl font-semibold">Регистрация</h1>
                 <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                    Войдите в аккаунт.
+                    Создайте аккаунт. Роль назначит администратор.
                 </p>
             </div>
 
@@ -64,19 +76,29 @@ export function LoginPage() {
                     />
                 </div>
 
+                <div className="space-y-1">
+                    <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Confirm password</label>
+                    <input
+                        type="password"
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none dark:border-neutral-800 dark:bg-neutral-950"
+                        value={password2}
+                        onChange={(e) => setPassword2(e.target.value)}
+                    />
+                </div>
+
                 <button
                     type="button"
                     onClick={submit}
                     disabled={loading}
-                    className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+                    className="w-full rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                 >
-                    {loading ? "Signing in…" : "Sign in"}
+                    {loading ? "Creating…" : "Create account"}
                 </button>
 
-                <div className="text-sm text-neutral-600 dark:text-neutral-300">
-                    Нет аккаунта?{" "}
-                    <Link to="/register" className="font-medium underline">
-                        Зарегистрироваться
+                <div className="text-center text-sm text-neutral-600 dark:text-neutral-300">
+                    Уже есть аккаунт?{" "}
+                    <Link to="/login" className="font-medium underline">
+                        Войти
                     </Link>
                 </div>
             </div>

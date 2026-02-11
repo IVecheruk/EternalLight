@@ -1,16 +1,13 @@
 package com.eternallight.backend.infrastructure.db.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "administrative_district")
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class AdministrativeDistrictEntity {
 
     @Id
@@ -18,7 +15,7 @@ public class AdministrativeDistrictEntity {
     @Column(name = "administrative_district_id")
     private Long id;
 
-    @Column(name = "name", nullable = false, unique = true)
+    @Column(nullable = false, unique = true)
     private String name;
 
     public AdministrativeDistrictEntity(String name) {

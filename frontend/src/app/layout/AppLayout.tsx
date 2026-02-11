@@ -1,6 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/features/auth/model/useAuth";
-import { Button } from "@/shared/ui/Button";
 import { useTheme } from "@/app/theme/ThemeProvider";
 
 const navItems = [
@@ -23,9 +23,26 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
             : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-900",
     ].join(" ");
 
+function initials(email?: string) {
+    if (!email) return "U";
+    return email.trim().slice(0, 1).toUpperCase();
+}
+
 export const AppLayout = () => {
     const { isAuthenticated, user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
+
+    const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const onDoc = (e: MouseEvent) => {
+            if (!menuRef.current) return;
+            if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+        };
+        document.addEventListener("mousedown", onDoc);
+        return () => document.removeEventListener("mousedown", onDoc);
+    }, []);
 
     return (
         <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
@@ -48,26 +65,62 @@ export const AppLayout = () => {
                             {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
                         </button>
 
+                        {/* Auth area */}
                         {isAuthenticated ? (
-                            <>
+                            <div className="relative" ref={menuRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setMenuOpen((v) => !v)}
+                                    className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-2 py-1.5 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
+                                    aria-label="Open profile menu"
+                                >
+                                    <div className="grid h-8 w-8 place-items-center rounded-full bg-neutral-900 text-xs font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
+                                        {initials(user?.email)}
+                                    </div>
+
+                                    <span className="hidden text-sm text-neutral-700 dark:text-neutral-200 md:block">
+                    {user?.email ?? "Account"}
+                  </span>
+                                </button>
+
+                                {menuOpen && (
+                                    <div className="absolute right-0 mt-2 w-52 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+                                        <Link
+                                            to="/profile"
+                                            onClick={() => setMenuOpen(false)}
+                                            className="block px-4 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                                        >
+                                            Profile
+                                        </Link>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                logout();
+                                            }}
+                                            className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                                        >
+                                            Logout
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3">
                                 <Link
                                     className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
-                                    to="/profile"
+                                    to="/register"
                                 >
-                                    {user?.email ?? "Profile"}
+                                    Register
                                 </Link>
-
-                                <Button variant="secondary" onClick={logout}>
-                                    Logout
-                                </Button>
-                            </>
-                        ) : (
-                            <Link
-                                className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
-                                to="/login"
-                            >
-                                Login
-                            </Link>
+                                <Link
+                                    className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
+                                    to="/login"
+                                >
+                                    Login
+                                </Link>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -83,12 +136,7 @@ export const AppLayout = () => {
 
                     <nav className="space-y-1">
                         {navItems.map((i) => (
-                            <NavLink
-                                key={i.to}
-                                to={i.to}
-                                className={navLinkClass}
-                                end={i.to === "/"}
-                            >
+                            <NavLink key={i.to} to={i.to} className={navLinkClass} end={i.to === "/"}>
                                 {i.label}
                             </NavLink>
                         ))}

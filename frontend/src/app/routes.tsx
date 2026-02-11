@@ -4,6 +4,7 @@ import { AppLayout } from "@/app/layout/AppLayout";
 
 import { HomePage } from "@/pages/home/HomePage";
 import { LoginPage } from "@/pages/login/LoginPage";
+import { RegisterPage } from "@/pages/register/RegisterPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
 
 import { OrganizationsPage } from "@/pages/organizations/OrganizationsPage";
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
 
             // auth (пока без защиты)
             { path: "login", element: <LoginPage /> },
+            { path: "register", element: <RegisterPage /> },
             { path: "profile", element: <ProfilePage /> },
 
             // navigation pages
@@ -42,11 +44,11 @@ export const router = createBrowserRouter([
             // map
             { path: "map", element: <MapPage /> },
 
-            // optional redirects (можно убрать, если не нужно)
+            // redirects (не обязательно, но удобно)
             { path: "home", element: <Navigate to="/" replace /> },
             { path: "maps", element: <Navigate to="/map" replace /> },
 
-            // 404 (always last)
+            // 404
             { path: "*", element: <NotFoundPage /> },
         ],
     },

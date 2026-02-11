@@ -1,148 +1,105 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import { TablePage } from "@/shared/ui/TablePage";
+import { TextField } from "@/shared/ui/TextField";
+
 import { organizationApi } from "@/entities/organization/api/organizationApi";
 import type { Organization } from "@/entities/organization/model/types";
-import { TablePage } from "@/shared/ui/TablePage";
-import { Modal } from "@/shared/ui/Modal";
-import { CreateOrganizationForm } from "@/features/organizations/create/ui/CreateOrganizationForm";
-import { UpdateOrganizationForm } from "@/features/organizations/update/ui/UpdateOrganizationForm";
 
-export const OrganizationsPage = () => {
-    const [items, setItems] = useState<Organization[]>([]);
-    const [loading, setLoading] = useState(true);
+type OrgFormState = {
+    fullName: string;
+    city: string;
+};
+
+function CreateOrgForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+    const [form, setForm] = useState<OrgFormState>({ fullName: "", city: "" });
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [createOpen, setCreateOpen] = useState(false);
-    const [editOpen, setEditOpen] = useState(false);
-    const [selected, setSelected] = useState<Organization | null>(null);
+    const submit = async () => {
+        const fullName = form.fullName.trim();
+        const city = form.city.trim();
 
-    const load = async () => {
-        setLoading(true);
-        setError(null);
+        if (!fullName) {
+            setError("fullName обязателен.");
+            return;
+        }
+
         try {
-            const data = await organizationApi.list();
-            setItems(data);
-        } catch (e: any) {
-            setError(e?.message ?? "Не удалось загрузить organizations.");
+            setLoading(true);
+            setError(null);
+
+            await organizationApi.create({
+                fullName,
+                city: city.length ? city : null,
+            });
+
+            onDone();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Не удалось создать организацию.");
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        void load();
-    }, []);
-
-    const actions = useMemo(
-        () => (
-            <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black"
-            >
-                + New
-            </button>
-        ),
-        []
-    );
-
-    const onEdit = (o: Organization) => {
-        setSelected(o);
-        setEditOpen(true);
-    };
-
-    const onDelete = async (o: Organization) => {
-        const ok = confirm(`Удалить организацию "${o.fullName}"?`);
-        if (!ok) return;
-
-        try {
-            setError(null);
-            await organizationApi.remove(o.id);
-            await load();
-        } catch (e: any) {
-            setError(e?.message ?? "Не удалось удалить организацию.");
-        }
-    };
-
     return (
-        <>
-            <TablePage
-                title="Organizations"
-                subtitle="Справочник организаций."
-                actions={actions}
-                loading={loading}
-                error={error}
-            >
-                <div className="border-b border-neutral-200 px-5 py-3 text-sm font-medium text-neutral-900">
-                    Total: {items.length}
-                </div>
+        <div className="space-y-4">
+            {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+            )}
 
-                {items.length === 0 ? (
-                    <div className="px-5 py-6 text-sm text-neutral-600">
-                        Пока пусто. Нажми <span className="font-medium">+ New</span>, чтобы создать первую организацию.
-                    </div>
-                ) : (
-                    <ul className="divide-y divide-neutral-200">
-                        {items.map((o) => (
-                            <li key={o.id} className="px-5 py-4">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <div className="truncate text-sm font-semibold text-neutral-900">{o.fullName}</div>
-                                        <div className="mt-1 text-xs text-neutral-600">
-                                            <span className="font-medium text-neutral-700">ID:</span> {o.id}
-                                            {o.city ? (
-                                                <>
-                                                    {" "}
-                                                    • <span className="font-medium text-neutral-700">City:</span> {o.city}
-                                                </>
-                                            ) : null}
-                                        </div>
-                                    </div>
+            <TextField
+                label="Full name"
+                value={form.fullName}
+                placeholder="ООО ГОРСВЕТ"
+                onChange={(v) => setForm((s) => ({ ...s, fullName: v }))}
+            />
+            <TextField
+                label="City"
+                value={form.city}
+                placeholder="Barnaul"
+                onChange={(v) => setForm((s) => ({ ...s, city: v }))}
+            />
 
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => onEdit(o)}
-                                            className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => void onDelete(o)}
-                                            className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs text-red-700 hover:bg-red-50"
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </TablePage>
+            <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                    disabled={loading}
+                >
+                    Cancel
+                </button>
 
-            <Modal open={createOpen} title="Create organization" onClose={() => setCreateOpen(false)}>
-                <CreateOrganizationForm
-                    onCancel={() => setCreateOpen(false)}
-                    onCreated={async () => {
-                        setCreateOpen(false);
-                        await load();
-                    }}
-                />
-            </Modal>
-
-            <Modal open={editOpen} title="Update organization" onClose={() => setEditOpen(false)}>
-                {selected ? (
-                    <UpdateOrganizationForm
-                        initial={selected}
-                        onCancel={() => setEditOpen(false)}
-                        onUpdated={async () => {
-                            setEditOpen(false);
-                            await load();
-                        }}
-                    />
-                ) : null}
-            </Modal>
-        </>
+                <button
+                    type="button"
+                    onClick={() => void submit()}
+                    className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+                    disabled={loading}
+                >
+                    {loading ? "Creating…" : "Create"}
+                </button>
+            </div>
+        </div>
     );
-};
+}
+
+export function OrganizationsPage() {
+    return (
+        <TablePage<Organization>
+            title="Organizations"
+            subtitle="Базовая CRUD-страница. Пока без auth-защиты."
+            load={() => organizationApi.list()}
+            getRowId={(o) => o.id}
+            columns={[
+                { key: "id", header: "ID", render: (o) => o.id, className: "w-[90px] text-neutral-500" },
+                { key: "fullName", header: "Full name", render: (o) => o.fullName ?? "—" },
+                { key: "city", header: "City", render: (o) => o.city ?? "—", className: "w-[180px]" },
+            ]}
+            canCreate
+            canEdit={false} // пока выключаем, когда сделаем update api — включим
+            canRemove
+            renderCreate={({ onDone, onCancel }) => <CreateOrgForm onDone={onDone} onCancel={onCancel} />}
+            remove={(o) => organizationApi.remove(o.id)}
+        />
+    );
+}

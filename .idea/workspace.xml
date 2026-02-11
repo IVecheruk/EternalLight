@@ -5,20 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="88ffe580-ed76-4451-ab30-0ecab9131250" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/api/controller/HealthController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/api/exception/ApiExceptionHandler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/application/service/PingService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/common/error/ErrorResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitattributes" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.gitattributes" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.mvn/wrapper/maven-wrapper.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mvnw" beforeDir="false" afterPath="$PROJECT_DIR$/backend/mvnw" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mvnw.cmd" beforeDir="false" afterPath="$PROJECT_DIR$/backend/mvnw.cmd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/eternallight/backend/EternalLightApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/EternalLightApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/eternallight/backend/EternalLightApplicationTests.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/test/java/com/eternallight/backend/EternalLightApplicationTests.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/entities/district/api/administrativeDistrictApi.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/shared/ui/TextField.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/bdedc1b8-555f-44a3-a612-9fb6722aa205.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/bdedc1b8-555f-44a3-a612-9fb6722aa205.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/bdedc1b8-555f-44a3-a612-9fb6722aa205/storage_v2/_src_/database/eternallight.OaGWVA/schema/public.abK9xQ.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/bdedc1b8-555f-44a3-a612-9fb6722aa205/storage_v2/_src_/database/eternallight.OaGWVA/schema/public.abK9xQ.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/http/auth.http" beforeDir="false" afterPath="$PROJECT_DIR$/backend/http/auth.http" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/infrastructure/db/entity/AdministrativeDistrictEntity.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/eternallight/backend/infrastructure/db/entity/AdministrativeDistrictEntity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/districts/DistrictsPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/districts/DistrictsPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/map/MapPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/map/MapPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/organizations/OrganizationsPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/organizations/OrganizationsPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/shared/ui/Modal/Modal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/shared/ui/Modal/Modal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/shared/ui/TablePage/TablePage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/shared/ui/TablePage/TablePage.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,10 +45,10 @@
     &quot;accountId&quot;: &quot;8aa545f3-3d02-4b8c-87e6-632aa6fa9e13&quot;
   }
 }</component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
@@ -66,24 +64,27 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/veche/Desktop/SpringTutorial/EternalLight",
-    "settings.editor.selected.configurable": "preferences.lookFeel"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/veche/Desktop/SpringTutorial/EternalLight&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "postgresql"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;postgresql&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\veche\Desktop\SpringTutorial\EternalLight\frontend\src\entities\organization\model" />
@@ -128,6 +129,9 @@
       <updated>1770348507262</updated>
       <workItem from="1770348508291" duration="1380000" />
       <workItem from="1770350115000" duration="24845000" />
+      <workItem from="1770726917440" duration="61000" />
+      <workItem from="1770727063631" duration="16000" />
+      <workItem from="1770727101625" duration="6000" />
     </task>
     <servers />
   </component>

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import MapGL, { Popup, Source, Layer } from "react-map-gl/maplibre";
+import type { MapLayerMouseEvent, MapGeoJSONFeature, LayerProps } from "react-map-gl/maplibre";
 import type {
-    MapGeoJSONFeature,
-    MapLayerMouseEvent,
-    LayerProps,
-} from "react-map-gl/maplibre";
-import type { Feature, FeatureCollection, Point, Polygon } from "geojson";
+    Feature,
+    FeatureCollection,
+    Polygon,
+    MultiLineString,
+    Point as GeoPoint,
+} from "geojson";
 
 import { mapApi } from "@/entities/map/api/mapApi";
 import type { MapDataResponse, MapPoint } from "@/entities/map/model/types";
@@ -13,6 +15,7 @@ import { useTheme } from "@/app/theme/ThemeProvider";
 
 type RangePreset = "1h" | "24h" | "7d";
 type ViewMode = "grid" | "heatmap" | "points" | "all";
+type GridMetric = "sum" | "avg" | "kde";
 
 function rangeToDates(preset: RangePreset) {
     const to = new Date();
@@ -25,7 +28,7 @@ function rangeToDates(preset: RangePreset) {
     return { from: from.toISOString(), to: to.toISOString() };
 }
 
-// ---- utils: meters <-> degrees ----
+// ---- meters <-> degrees (около Барнаула работает нормально) ----
 function metersToDegreesLat(m: number) {
     return m / 111_320;
 }
@@ -34,12 +37,27 @@ function metersToDegreesLng(m: number, latDeg: number) {
     return m / (111_320 * Math.cos(latRad));
 }
 
-type Cell = {
+// Быстрая метрика расстояния в метрах (equirectangular)
+function distMeters(lng1: number, lat1: number, lng2: number, lat2: number, refLatDeg: number) {
+    const kx = 111_320 * Math.cos((refLatDeg * Math.PI) / 180);
+    const ky = 111_320;
+    const dx = (lng2 - lng1) * kx;
+    const dy = (lat2 - lat1) * ky;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function clamp01(x: number) {
+    return Math.max(0, Math.min(1, x));
+}
+
+type GridCell = {
     key: string;
     r: number;
     c: number;
     sumKw: number;
     count: number;
+    avgKw: number;
+    kdeKw: number; // сглаженное значение
     minLng: number;
     minLat: number;
     maxLng: number;
@@ -51,10 +69,14 @@ type Cell = {
 type GridFeatureProps = {
     key: string;
     sumKw: number;
+    avgKw: number;
+    kdeKw: number;
     count: number;
     centerLng: number;
     centerLat: number;
-    intensity: number;
+    intensitySum: number;
+    intensityAvg: number;
+    intensityKde: number;
 };
 
 type PointFeatureProps = {
@@ -67,27 +89,126 @@ type PointFeatureProps = {
     weight: number;
 };
 
-// helpers: safe number conversion from unknown
-function toNumber(v: unknown): number {
-    const n = typeof v === "number" ? v : Number(v);
-    return Number.isFinite(n) ? n : 0;
-}
-function toString(v: unknown): string {
-    return typeof v === "string" ? v : String(v ?? "");
+function isGridFeature(f: MapGeoJSONFeature): f is MapGeoJSONFeature & { properties: GridFeatureProps } {
+    const p = f.properties as Partial<GridFeatureProps> | null | undefined;
+    return !!p && typeof p.key === "string" && typeof p.count === "number" && typeof p.sumKw === "number";
 }
 
-function isGridFeature(
-    f: MapGeoJSONFeature
-): f is MapGeoJSONFeature & { properties: GridFeatureProps } {
-    const p = f.properties as Record<string, unknown> | null | undefined;
-    return !!p && typeof p.key === "string" && "sumKw" in p && "count" in p;
+function isPointFeature(f: MapGeoJSONFeature): f is MapGeoJSONFeature & { properties: PointFeatureProps } {
+    const p = f.properties as Partial<PointFeatureProps> | null | undefined;
+    return !!p && typeof p.name === "string" && typeof p.loadKw === "number";
 }
 
-function isPointFeature(
-    f: MapGeoJSONFeature
-): f is MapGeoJSONFeature & { properties: PointFeatureProps } {
-    const p = f.properties as Record<string, unknown> | null | undefined;
-    return !!p && typeof p.name === "string" && "loadKw" in p && "status" in p;
+/**
+ * Marching Squares: строим изолинии по нормализованному полю (0..1).
+ * Возвращаем MultiLineString фичи (по одному уровню).
+ */
+function buildContours(
+    nodeField: number[][], // (rows+1) x (cols+1)
+    minLng: number,
+    minLat: number,
+    dLng: number,
+    dLat: number,
+    levels: number[]
+): FeatureCollection<MultiLineString, { level: number }> {
+    const rows = nodeField.length - 1;
+    const cols = nodeField[0].length - 1;
+
+    // Линейная интерполяция на ребре
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const interp = (v1: number, v2: number, level: number) => {
+        const denom = v2 - v1;
+        if (Math.abs(denom) < 1e-9) return 0.5;
+        return clamp01((level - v1) / denom);
+    };
+
+    // Вершины клетки (узлы):
+    // a----b
+    // |    |
+    // d----c
+    // a=(r,c), b=(r,c+1), c=(r+1,c+1), d=(r+1,c)
+    const features: Feature<MultiLineString, { level: number }>[] = [];
+
+    for (const level of levels) {
+        const segments: number[][][] = [];
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const a = nodeField[r][c];
+                const b = nodeField[r][c + 1];
+                const cV = nodeField[r + 1][c + 1];
+                const d = nodeField[r + 1][c];
+
+                // индекс кейса (4 бита)
+                let idx = 0;
+                if (a >= level) idx |= 1;
+                if (b >= level) idx |= 2;
+                if (cV >= level) idx |= 4;
+                if (d >= level) idx |= 8;
+
+                // пусто/полностью заполнено — нет линии
+                if (idx === 0 || idx === 15) continue;
+
+                // координаты углов клетки
+                const x0 = minLng + c * dLng;
+                const x1 = x0 + dLng;
+                const y0 = minLat + r * dLat;
+                const y1 = y0 + dLat;
+
+                // находим пересечения с рёбрами (top, right, bottom, left)
+                const pts: { x: number; y: number }[] = [];
+
+                // top: a-b
+                if ((idx & 1) !== (idx & 2)) {
+                    const t = interp(a, b, level);
+                    pts.push({ x: lerp(x0, x1, t), y: y0 });
+                }
+                // right: b-c
+                if ((idx & 2) !== (idx & 4)) {
+                    const t = interp(b, cV, level);
+                    pts.push({ x: x1, y: lerp(y0, y1, t) });
+                }
+                // bottom: d-c
+                if ((idx & 8) !== (idx & 4)) {
+                    const t = interp(d, cV, level);
+                    pts.push({ x: lerp(x0, x1, t), y: y1 });
+                }
+                // left: a-d
+                if ((idx & 1) !== (idx & 8)) {
+                    const t = interp(a, d, level);
+                    pts.push({ x: x0, y: lerp(y0, y1, t) });
+                }
+
+                // Обычно 2 точки → 1 сегмент, иногда 4 → 2 сегмента (амбигуити).
+                if (pts.length === 2) {
+                    segments.push([
+                        [pts[0].x, pts[0].y],
+                        [pts[1].x, pts[1].y],
+                    ]);
+                } else if (pts.length === 4) {
+                    // Разбиваем на 2 сегмента
+                    segments.push([
+                        [pts[0].x, pts[0].y],
+                        [pts[1].x, pts[1].y],
+                    ]);
+                    segments.push([
+                        [pts[2].x, pts[2].y],
+                        [pts[3].x, pts[3].y],
+                    ]);
+                }
+            }
+        }
+
+        if (segments.length) {
+            features.push({
+                type: "Feature",
+                geometry: { type: "MultiLineString", coordinates: segments },
+                properties: { level },
+            });
+        }
+    }
+
+    return { type: "FeatureCollection", features };
 }
 
 export function MapPage() {
@@ -95,7 +216,11 @@ export function MapPage() {
 
     const [preset, setPreset] = useState<RangePreset>("1h");
     const [mode, setMode] = useState<ViewMode>("all");
+    const [metric, setMetric] = useState<GridMetric>("kde");
+
     const [cellSizeM, setCellSizeM] = useState<number>(350);
+    const [blurRadiusM, setBlurRadiusM] = useState<number>(650);
+    const [showContours, setShowContours] = useState<boolean>(true);
 
     const [data, setData] = useState<MapDataResponse | null>(null);
     const [loading, setLoading] = useState(false);
@@ -105,6 +230,8 @@ export function MapPage() {
     const [activeCell, setActiveCell] = useState<{
         key: string;
         sumKw: number;
+        avgKw: number;
+        kdeKw: number;
         count: number;
         centerLng: number;
         centerLat: number;
@@ -131,7 +258,7 @@ export function MapPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preset]);
 
-    // Барнаул (lng, lat)
+    // Барнаул
     const initialViewState = useMemo(
         () => ({
             longitude: 83.7636,
@@ -150,12 +277,12 @@ export function MapPage() {
     );
 
     // ---- points geojson ----
-    const pointsGeoJson: FeatureCollection<Point, PointFeatureProps> = useMemo(() => {
+    const pointsGeoJson: FeatureCollection<GeoPoint, PointFeatureProps> = useMemo(() => {
         const points = data?.points ?? [];
         return {
             type: "FeatureCollection",
             features: points.map(
-                (p): Feature<Point, PointFeatureProps> => ({
+                (p): Feature<GeoPoint, PointFeatureProps> => ({
                     type: "Feature",
                     geometry: { type: "Point", coordinates: [p.lng, p.lat] },
                     properties: {
@@ -172,31 +299,42 @@ export function MapPage() {
         };
     }, [data]);
 
-    const maxKw = useMemo(() => {
+    const maxPointKw = useMemo(() => {
         const arr = data?.points?.map((p) => p.loadKw) ?? [];
         const m = arr.length ? Math.max(...arr) : 1;
         return m > 0 ? m : 1;
     }, [data]);
 
-    // ---- grid aggregation ----
-    const grid = useMemo(() => {
+    // ---- GRID + KDE (blur) + contours ----
+    const gridComputed = useMemo(() => {
         const points = data?.points ?? [];
-        if (points.length === 0) {
-            const empty: FeatureCollection<Polygon, GridFeatureProps> = {
-                type: "FeatureCollection",
-                features: [],
-            };
+
+        const emptyGrid: FeatureCollection<Polygon, GridFeatureProps> = { type: "FeatureCollection", features: [] };
+        const emptyContours: FeatureCollection<MultiLineString, { level: number }> = {
+            type: "FeatureCollection",
+            features: [],
+        };
+
+        if (!points.length) {
             return {
-                cellsGeoJson: empty,
-                maxCellKw: 1,
-                cellsIndex: new globalThis.Map<string, Cell>(),
+                gridGeo: emptyGrid,
+                contoursGeo: emptyContours,
+                maxSum: 1,
+                maxAvg: 1,
+                maxKde: 1,
+                minLng: 0,
+                minLat: 0,
+                dLng: 0,
+                dLat: 0,
             };
         }
 
+        // refLat для расстояний/градусов
         const avgLat = points.reduce((s, p) => s + p.lat, 0) / points.length;
         const dLat = metersToDegreesLat(cellSizeM);
         const dLng = metersToDegreesLng(cellSizeM, avgLat);
 
+        // bbox
         let minLat = Infinity,
             maxLat = -Infinity,
             minLng = Infinity,
@@ -209,90 +347,303 @@ export function MapPage() {
             maxLng = Math.max(maxLng, p.lng);
         }
 
-        // expand bbox a bit
-        minLat -= dLat;
-        maxLat += dLat;
-        minLng -= dLng;
-        maxLng += dLng;
+        // расширим bbox под blur (чтобы не обрезать пятно)
+        const padLat = metersToDegreesLat(blurRadiusM * 1.2);
+        const padLng = metersToDegreesLng(blurRadiusM * 1.2, avgLat);
 
-        const cols = Math.max(1, Math.ceil((maxLng - minLng) / dLng));
-        const rows = Math.max(1, Math.ceil((maxLat - minLat) / dLat));
+        minLat -= padLat;
+        maxLat += padLat;
+        minLng -= padLng;
+        maxLng += padLng;
 
-        const map = new globalThis.Map<string, Cell>();
+        // размеры сетки (ограничим чтобы не улететь по производительности)
+        let cols = Math.max(1, Math.ceil((maxLng - minLng) / dLng));
+        let rows = Math.max(1, Math.ceil((maxLat - minLat) / dLat));
 
-        for (const p of points) {
-            const c = Math.floor((p.lng - minLng) / dLng);
-            const r = Math.floor((p.lat - minLat) / dLat);
-            if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
+        const maxCells = 70 * 70; // безопасно для фронта
+        if (rows * cols > maxCells) {
+            const scale = Math.sqrt((rows * cols) / maxCells);
+            const newCell = Math.round(cellSizeM * scale);
+            const dLat2 = metersToDegreesLat(newCell);
+            const dLng2 = metersToDegreesLng(newCell, avgLat);
+            cols = Math.max(1, Math.ceil((maxLng - minLng) / dLng2));
+            rows = Math.max(1, Math.ceil((maxLat - minLat) / dLat2));
+            // подменим
+            return (() => {
+                // рекурсивно пересчитать с увеличенной клеткой без рекурсии
+                // (повторим один раз)
+                const dLatR = dLat2;
+                const dLngR = dLng2;
 
-            const key = `${r}:${c}`;
-            let cell = map.get(key);
+                const cells: GridCell[] = [];
+                const sigma = Math.max(1, blurRadiusM);
+                const twoSigma2 = 2 * sigma * sigma;
 
-            if (!cell) {
+                let maxSum = 1;
+                let maxAvg = 1;
+                let maxKde = 1;
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const cellMinLng = minLng + c * dLngR;
+                        const cellMinLat = minLat + r * dLatR;
+                        const cellMaxLng = cellMinLng + dLngR;
+                        const cellMaxLat = cellMinLat + dLatR;
+                        const centerLng = (cellMinLng + cellMaxLng) / 2;
+                        const centerLat = (cellMinLat + cellMaxLat) / 2;
+
+                        let sumKw = 0;
+                        let count = 0;
+
+                        // raw sum/count: просто точки попавшие внутрь клетки
+                        for (const p of points) {
+                            if (p.lng >= cellMinLng && p.lng < cellMaxLng && p.lat >= cellMinLat && p.lat < cellMaxLat) {
+                                sumKw += p.loadKw;
+                                count += 1;
+                            }
+                        }
+
+                        const avgKw = sumKw / Math.max(1, count);
+
+                        // KDE: вклад всех точек с gaussian kernel
+                        let kdeKw = 0;
+                        for (const p of points) {
+                            const d = distMeters(centerLng, centerLat, p.lng, p.lat, avgLat);
+                            const w = Math.exp(-(d * d) / twoSigma2);
+                            kdeKw += p.loadKw * w;
+                        }
+
+                        maxSum = Math.max(maxSum, sumKw);
+                        maxAvg = Math.max(maxAvg, avgKw);
+                        maxKde = Math.max(maxKde, kdeKw);
+
+                        cells.push({
+                            key: `${r}:${c}`,
+                            r,
+                            c,
+                            sumKw,
+                            count,
+                            avgKw,
+                            kdeKw,
+                            minLng: cellMinLng,
+                            minLat: cellMinLat,
+                            maxLng: cellMaxLng,
+                            maxLat: cellMaxLat,
+                            centerLng,
+                            centerLat,
+                        });
+                    }
+                }
+
+                // поле на узлах для контуров: (rows+1)x(cols+1)
+                // возьмём intensityKde на соседних клетках и усредним
+                const nodeField: number[][] = Array.from({ length: rows + 1 }, () =>
+                    Array.from({ length: cols + 1 }, () => 0)
+                );
+
+                // заполняем узлы как среднее из 4 соседних клеток
+                for (let nr = 0; nr <= rows; nr++) {
+                    for (let nc = 0; nc <= cols; nc++) {
+                        let s = 0;
+                        let k = 0;
+
+                        // клетки вокруг узла: (nr-1,nc-1), (nr-1,nc), (nr,nc-1), (nr,nc)
+                        const idxs = [
+                            { r: nr - 1, c: nc - 1 },
+                            { r: nr - 1, c: nc },
+                            { r: nr, c: nc - 1 },
+                            { r: nr, c: nc },
+                        ];
+
+                        for (const it of idxs) {
+                            if (it.r >= 0 && it.c >= 0 && it.r < rows && it.c < cols) {
+                                const cell = cells[it.r * cols + it.c];
+                                const intensity = maxKde > 0 ? cell.kdeKw / maxKde : 0;
+                                s += intensity;
+                                k += 1;
+                            }
+                        }
+
+                        nodeField[nr][nc] = k ? s / k : 0;
+                    }
+                }
+
+                const contoursGeo: FeatureCollection<MultiLineString, { level: number }> = showContours
+                    ? buildContours(
+                        nodeField,
+                        minLng,
+                        minLat,
+                        dLngR,
+                        dLatR,
+                        [0.2, 0.35, 0.5, 0.65, 0.8]
+                    )
+                    : { type: "FeatureCollection", features: [] };
+
+                const gridGeo: FeatureCollection<Polygon, GridFeatureProps> = {
+                    type: "FeatureCollection",
+                    features: cells.map(
+                        (c): Feature<Polygon, GridFeatureProps> => ({
+                            type: "Feature",
+                            geometry: {
+                                type: "Polygon",
+                                coordinates: [
+                                    [
+                                        [c.minLng, c.minLat],
+                                        [c.maxLng, c.minLat],
+                                        [c.maxLng, c.maxLat],
+                                        [c.minLng, c.maxLat],
+                                        [c.minLng, c.minLat],
+                                    ],
+                                ],
+                            },
+                            properties: {
+                                key: c.key,
+                                sumKw: c.sumKw,
+                                avgKw: c.avgKw,
+                                kdeKw: c.kdeKw,
+                                count: c.count,
+                                centerLng: c.centerLng,
+                                centerLat: c.centerLat,
+                                intensitySum: maxSum > 0 ? c.sumKw / maxSum : 0,
+                                intensityAvg: maxAvg > 0 ? c.avgKw / maxAvg : 0,
+                                intensityKde: maxKde > 0 ? c.kdeKw / maxKde : 0,
+                            },
+                        })
+                    ),
+                };
+
+                return { gridGeo, contoursGeo, maxSum, maxAvg, maxKde, minLng, minLat, dLng: dLngR, dLat: dLatR };
+            })();
+        }
+
+        // обычный расчёт (без масштаба)
+        const cells: GridCell[] = [];
+        const sigma = Math.max(1, blurRadiusM);
+        const twoSigma2 = 2 * sigma * sigma;
+
+        let maxSum = 1;
+        let maxAvg = 1;
+        let maxKde = 1;
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
                 const cellMinLng = minLng + c * dLng;
                 const cellMinLat = minLat + r * dLat;
                 const cellMaxLng = cellMinLng + dLng;
                 const cellMaxLat = cellMinLat + dLat;
+                const centerLng = (cellMinLng + cellMaxLng) / 2;
+                const centerLat = (cellMinLat + cellMaxLat) / 2;
 
-                cell = {
-                    key,
+                let sumKw = 0;
+                let count = 0;
+
+                for (const p of points) {
+                    if (p.lng >= cellMinLng && p.lng < cellMaxLng && p.lat >= cellMinLat && p.lat < cellMaxLat) {
+                        sumKw += p.loadKw;
+                        count += 1;
+                    }
+                }
+
+                const avgKw = sumKw / Math.max(1, count);
+
+                let kdeKw = 0;
+                for (const p of points) {
+                    const d = distMeters(centerLng, centerLat, p.lng, p.lat, avgLat);
+                    const w = Math.exp(-(d * d) / twoSigma2);
+                    kdeKw += p.loadKw * w;
+                }
+
+                maxSum = Math.max(maxSum, sumKw);
+                maxAvg = Math.max(maxAvg, avgKw);
+                maxKde = Math.max(maxKde, kdeKw);
+
+                cells.push({
+                    key: `${r}:${c}`,
                     r,
                     c,
-                    sumKw: 0,
-                    count: 0,
+                    sumKw,
+                    count,
+                    avgKw,
+                    kdeKw,
                     minLng: cellMinLng,
                     minLat: cellMinLat,
                     maxLng: cellMaxLng,
                     maxLat: cellMaxLat,
-                    centerLng: (cellMinLng + cellMaxLng) / 2,
-                    centerLat: (cellMinLat + cellMaxLat) / 2,
-                };
-
-                map.set(key, cell);
+                    centerLng,
+                    centerLat,
+                });
             }
-
-            cell.sumKw += p.loadKw;
-            cell.count += 1;
         }
 
-        let maxCellKw = 1;
-        for (const cell of map.values()) {
-            maxCellKw = Math.max(maxCellKw, cell.sumKw);
+        // узлы для контуров (rows+1)x(cols+1)
+        const nodeField: number[][] = Array.from({ length: rows + 1 }, () => Array.from({ length: cols + 1 }, () => 0));
+
+        for (let nr = 0; nr <= rows; nr++) {
+            for (let nc = 0; nc <= cols; nc++) {
+                let s = 0;
+                let k = 0;
+
+                const idxs = [
+                    { r: nr - 1, c: nc - 1 },
+                    { r: nr - 1, c: nc },
+                    { r: nr, c: nc - 1 },
+                    { r: nr, c: nc },
+                ];
+
+                for (const it of idxs) {
+                    if (it.r >= 0 && it.c >= 0 && it.r < rows && it.c < cols) {
+                        const cell = cells[it.r * cols + it.c];
+                        const intensity = maxKde > 0 ? cell.kdeKw / maxKde : 0;
+                        s += intensity;
+                        k += 1;
+                    }
+                }
+
+                nodeField[nr][nc] = k ? s / k : 0;
+            }
         }
 
-        const cellsGeoJson: FeatureCollection<Polygon, GridFeatureProps> = {
+        const contoursGeo = showContours
+            ? buildContours(nodeField, minLng, minLat, dLng, dLat, [0.2, 0.35, 0.5, 0.65, 0.8])
+            : emptyContours;
+
+        const gridGeo: FeatureCollection<Polygon, GridFeatureProps> = {
             type: "FeatureCollection",
-            features: Array.from(map.values())
-                .filter((c) => c.count > 0)
-                .map(
-                    (c): Feature<Polygon, GridFeatureProps> => ({
-                        type: "Feature",
-                        geometry: {
-                            type: "Polygon",
-                            coordinates: [
-                                [
-                                    [c.minLng, c.minLat],
-                                    [c.maxLng, c.minLat],
-                                    [c.maxLng, c.maxLat],
-                                    [c.minLng, c.maxLat],
-                                    [c.minLng, c.minLat],
-                                ],
+            features: cells.map(
+                (c): Feature<Polygon, GridFeatureProps> => ({
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: [
+                            [
+                                [c.minLng, c.minLat],
+                                [c.maxLng, c.minLat],
+                                [c.maxLng, c.maxLat],
+                                [c.minLng, c.maxLat],
+                                [c.minLng, c.minLat],
                             ],
-                        },
-                        properties: {
-                            key: c.key,
-                            sumKw: c.sumKw,
-                            count: c.count,
-                            centerLng: c.centerLng,
-                            centerLat: c.centerLat,
-                            intensity: maxCellKw > 0 ? c.sumKw / maxCellKw : 0,
-                        },
-                    })
-                ),
+                        ],
+                    },
+                    properties: {
+                        key: c.key,
+                        sumKw: c.sumKw,
+                        avgKw: c.avgKw,
+                        kdeKw: c.kdeKw,
+                        count: c.count,
+                        centerLng: c.centerLng,
+                        centerLat: c.centerLat,
+                        intensitySum: maxSum > 0 ? c.sumKw / maxSum : 0,
+                        intensityAvg: maxAvg > 0 ? c.avgKw / maxAvg : 0,
+                        intensityKde: maxKde > 0 ? c.kdeKw / maxKde : 0,
+                    },
+                })
+            ),
         };
 
-        return { cellsGeoJson, maxCellKw, cellsIndex: map };
-    }, [data, cellSizeM]);
+        return { gridGeo, contoursGeo, maxSum, maxAvg, maxKde, minLng, minLat, dLng, dLat };
+    }, [data, cellSizeM, blurRadiusM, showContours]);
+
+    const intensityProp = metric === "sum" ? "intensitySum" : metric === "avg" ? "intensityAvg" : "intensityKde";
 
     // ---- layers ----
     const heatmapLayer: LayerProps = useMemo(
@@ -301,9 +652,9 @@ export function MapPage() {
             type: "heatmap",
             source: "points",
             paint: {
-                "heatmap-weight": ["interpolate", ["linear"], ["get", "weight"], 0, 0, maxKw, 1],
+                "heatmap-weight": ["interpolate", ["linear"], ["get", "weight"], 0, 0, maxPointKw, 1],
                 "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 10, 1, 14, 2.5],
-                "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 18, 14, 40],
+                "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 18, 14, 44],
                 "heatmap-opacity": mode === "points" || mode === "grid" ? 0 : 0.85,
                 "heatmap-color": [
                     "interpolate",
@@ -322,7 +673,7 @@ export function MapPage() {
                 ],
             },
         }),
-        [maxKw, mode]
+        [maxPointKw, mode]
     );
 
     const circlesLayer: LayerProps = useMemo(
@@ -359,25 +710,25 @@ export function MapPage() {
             type: "fill",
             source: "grid",
             paint: {
-                "fill-opacity": mode === "heatmap" || mode === "points" ? 0 : 0.65,
+                "fill-opacity": mode === "heatmap" || mode === "points" ? 0 : 0.62,
                 "fill-color": [
                     "interpolate",
                     ["linear"],
-                    ["get", "intensity"],
+                    ["get", intensityProp],
                     0,
                     "rgba(34,197,94,0.10)",
-                    0.3,
-                    "rgba(34,197,94,0.35)",
-                    0.55,
+                    0.25,
+                    "rgba(34,197,94,0.30)",
+                    0.5,
                     "rgba(245,158,11,0.45)",
-                    0.8,
+                    0.75,
                     "rgba(239,68,68,0.55)",
                     1,
                     "rgba(220,38,38,0.70)",
                 ],
             },
         }),
-        [mode]
+        [mode, intensityProp]
     );
 
     const gridLineLayer: LayerProps = useMemo(
@@ -386,12 +737,27 @@ export function MapPage() {
             type: "line",
             source: "grid",
             paint: {
-                "line-opacity": mode === "heatmap" || mode === "points" ? 0 : 0.35,
-                "line-color": theme === "dark" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.25)",
+                "line-opacity": mode === "heatmap" || mode === "points" ? 0 : 0.25,
+                "line-color": theme === "dark" ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.22)",
                 "line-width": 1,
             },
         }),
         [mode, theme]
+    );
+
+    const contourLayer: LayerProps = useMemo(
+        () => ({
+            id: "contours",
+            type: "line",
+            source: "contours",
+            paint: {
+                "line-color": theme === "dark" ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.55)",
+                "line-width": 1.6,
+                "line-opacity":
+                    showContours && (mode === "grid" || mode === "all") && metric === "kde" ? 0.85 : 0,
+            },
+        }),
+        [theme, showContours, mode, metric]
     );
 
     const interactiveLayerIds = useMemo(() => {
@@ -404,31 +770,31 @@ export function MapPage() {
     const onMapClick = (e: MapLayerMouseEvent) => {
         const features = (e.features ?? []) as MapGeoJSONFeature[];
 
-        // priority: grid
         const gridF = features.find((f) => f.layer?.id === "grid-fill");
         if (gridF && isGridFeature(gridF)) {
             setActivePoint(null);
             setActiveCell({
-                key: toString(gridF.properties.key),
-                sumKw: toNumber(gridF.properties.sumKw),
-                count: toNumber(gridF.properties.count),
-                centerLng: toNumber(gridF.properties.centerLng),
-                centerLat: toNumber(gridF.properties.centerLat),
+                key: gridF.properties.key,
+                sumKw: Number(gridF.properties.sumKw),
+                avgKw: Number(gridF.properties.avgKw),
+                kdeKw: Number(gridF.properties.kdeKw),
+                count: Number(gridF.properties.count),
+                centerLng: Number(gridF.properties.centerLng),
+                centerLat: Number(gridF.properties.centerLat),
             });
             return;
         }
 
-        // then points
         const pointF = features.find((f) => f.layer?.id === "circles");
         if (pointF && isPointFeature(pointF)) {
             setActiveCell(null);
             setActivePoint({
-                id: toNumber(pointF.properties.id),
-                name: toString(pointF.properties.name),
+                id: String(pointF.properties.id),
+                name: String(pointF.properties.name),
                 status: pointF.properties.status,
-                loadKw: toNumber(pointF.properties.loadKw),
-                loadPct: toNumber(pointF.properties.loadPct),
-                updatedAt: toString(pointF.properties.updatedAt),
+                loadKw: Number(pointF.properties.loadKw),
+                loadPct: Number(pointF.properties.loadPct),
+                updatedAt: String(pointF.properties.updatedAt),
                 lat: e.lngLat.lat,
                 lng: e.lngLat.lng,
             });
@@ -441,11 +807,12 @@ export function MapPage() {
 
     return (
         <div className="space-y-4">
+            {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
                     <h1 className="text-2xl font-semibold tracking-tight">Map</h1>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                        Агрегация на фронте: сетка → суммарная нагрузка (kW) по клеткам.
+                        Barnaul • фронтовая агрегация: KDE blur + contours + grid.
                     </p>
                 </div>
 
@@ -471,6 +838,17 @@ export function MapPage() {
                         <option value="points">Points only</option>
                     </select>
 
+                    <select
+                        value={metric}
+                        onChange={(e) => setMetric(e.target.value as GridMetric)}
+                        className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950"
+                        title="Какая метрика окрашивает grid"
+                    >
+                        <option value="kde">Grid metric: KDE (blur)</option>
+                        <option value="sum">Grid metric: SUM kW</option>
+                        <option value="avg">Grid metric: AVG kW</option>
+                    </select>
+
                     <div className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950">
                         <span className="text-xs text-neutral-500 dark:text-neutral-400">Cell</span>
                         <select
@@ -486,6 +864,30 @@ export function MapPage() {
                         </select>
                     </div>
 
+                    <div className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950">
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">Blur</span>
+                        <select
+                            value={blurRadiusM}
+                            onChange={(e) => setBlurRadiusM(Number(e.target.value))}
+                            className="bg-transparent text-sm outline-none"
+                            title="Радиус сглаживания (KDE sigma ~ radius)"
+                        >
+                            <option value={350}>350m</option>
+                            <option value={650}>650m</option>
+                            <option value={900}>900m</option>
+                            <option value={1200}>1200m</option>
+                        </select>
+                    </div>
+
+                    <label className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-950">
+                        <input
+                            type="checkbox"
+                            checked={showContours}
+                            onChange={(e) => setShowContours(e.target.checked)}
+                        />
+                        Contours
+                    </label>
+
                     <button
                         type="button"
                         onClick={() => void load()}
@@ -498,16 +900,23 @@ export function MapPage() {
             </div>
 
             {error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                    {error}
-                </div>
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>
             )}
 
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-                    <div className="text-sm font-medium">Barnaul grid aggregation</div>
-                    <div className="text-xs text-neutral-600 dark:text-neutral-300">
-                        Клик по клетке / точке → popup.
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+                    <div>
+                        <div className="text-sm font-medium">Barnaul • KDE blur + contours</div>
+                        <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                            Клик по клетке → popup. Контуры рисуются по KDE (metric=kde).
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300">
+                        <span>Intensity</span>
+                        <div className="h-2 w-36 rounded-full bg-gradient-to-r from-green-500 via-amber-400 to-red-600 opacity-80" />
+                        <span>low</span>
+                        <span>high</span>
                     </div>
                 </div>
 
@@ -520,9 +929,14 @@ export function MapPage() {
                         onClick={onMapClick}
                     >
                         {/* GRID */}
-                        <Source id="grid" type="geojson" data={grid.cellsGeoJson}>
+                        <Source id="grid" type="geojson" data={gridComputed.gridGeo}>
                             <Layer {...gridFillLayer} />
                             <Layer {...gridLineLayer} />
+                        </Source>
+
+                        {/* CONTOURS */}
+                        <Source id="contours" type="geojson" data={gridComputed.contoursGeo}>
+                            <Layer {...contourLayer} />
                         </Source>
 
                         {/* POINTS */}
@@ -531,7 +945,7 @@ export function MapPage() {
                             <Layer {...circlesLayer} />
                         </Source>
 
-                        {/* Grid popup */}
+                        {/* POPUPS */}
                         {activeCell && (
                             <Popup
                                 longitude={activeCell.centerLng}
@@ -547,18 +961,22 @@ export function MapPage() {
                                             <b>Points:</b> {activeCell.count}
                                         </div>
                                         <div>
-                                            <b>Sum load:</b> {activeCell.sumKw.toFixed(2)} kW
+                                            <b>SUM:</b> {activeCell.sumKw.toFixed(2)} kW
                                         </div>
                                         <div>
-                                            <b>Avg load:</b>{" "}
-                                            {(activeCell.sumKw / Math.max(1, activeCell.count)).toFixed(2)} kW / point
+                                            <b>AVG:</b> {activeCell.avgKw.toFixed(2)} kW / point
+                                        </div>
+                                        <div>
+                                            <b>KDE:</b> {activeCell.kdeKw.toFixed(2)} (blur)
+                                        </div>
+                                        <div className="pt-1 text-[11px] text-neutral-500">
+                                            Grid metric now: {metric.toUpperCase()}
                                         </div>
                                     </div>
                                 </div>
                             </Popup>
                         )}
 
-                        {/* Point popup */}
                         {activePoint && (
                             <Popup
                                 longitude={activePoint.lng}
