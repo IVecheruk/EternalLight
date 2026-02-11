@@ -23,5 +23,5 @@ public class UserEntity {
     private String passwordHash;
 
     @Column(nullable = false, length = 60)
-    private String role; // USER / ADMIN
+    private String role; // SUPER_ADMIN / ORG_ADMIN / DISPATCHER / TECHNICIAN
 }

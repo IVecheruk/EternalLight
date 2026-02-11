@@ -10,9 +10,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final Set<String> ALLOWED_ROLES = Set.of(
+            "SUPER_ADMIN",
+            "ORG_ADMIN",
+            "DISPATCHER",
+            "TECHNICIAN"
+    );
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -25,10 +34,12 @@ public class AuthService {
             throw new IllegalArgumentException("Email already exists");
         }
 
+        String role = resolveRole(req.role());
+
         UserEntity user = UserEntity.builder()
                 .email(email)
                 .passwordHash(passwordEncoder.encode(req.password()))
-                .role("USER")
+                .role(role)
                 .build();
 
         user = userRepository.save(user);
@@ -54,5 +65,18 @@ public class AuthService {
     private String normalizeEmail(String email) {
         if (email == null) return "";
         return email.toLowerCase().trim();
+    }
+
+    private String resolveRole(String rawRole) {
+        if (rawRole == null || rawRole.isBlank()) {
+            return "TECHNICIAN";
+        }
+
+        String role = rawRole.trim().toUpperCase();
+        if (!ALLOWED_ROLES.contains(role)) {
+            throw new IllegalArgumentException("Unsupported role. Allowed roles: " + ALLOWED_ROLES);
+        }
+
+        return role;
     }
 }
