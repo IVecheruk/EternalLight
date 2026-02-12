@@ -1,40 +1,60 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/model/useAuth";
 import { useTheme } from "@/app/theme/ThemeProvider";
+import { usePermissions } from "@/features/permissions/model/usePermissions";
+import { ADMIN_ROLES, SUPER_ADMIN_ROLES, TECHNICIAN_ROLES } from "@/features/permissions/model/roles";
 
-const navSections = [
+type NavItem = {
+    to: string;
+    label: string;
+    roles?: readonly string[];
+};
+
+type NavSection = {
+    title: string;
+    items: NavItem[];
+};
+
+const navSections: NavSection[] = [
     {
         title: "Overview",
         items: [
-            { to: "/", label: "Home" },
-            { to: "/map", label: "Map" },
-            { to: "/all-data", label: "All data" },
+            { to: "/", label: "Home", roles: ADMIN_ROLES },
+            { to: "/all-data", label: "All data", roles: ADMIN_ROLES },
         ],
     },
     {
         title: "Infrastructure",
         items: [
-            { to: "/organizations", label: "Organizations" },
-            { to: "/districts", label: "Districts" },
-            { to: "/streets", label: "Streets" },
-            { to: "/lighting-objects", label: "Lighting objects" },
+            { to: "/organizations", label: "Organizations", roles: ADMIN_ROLES },
+            { to: "/districts", label: "Districts", roles: ADMIN_ROLES },
+            { to: "/streets", label: "Streets", roles: ADMIN_ROLES },
+            { to: "/lighting-objects", label: "Lighting objects", roles: ADMIN_ROLES },
         ],
     },
     {
         title: "Operations",
-        items: [{ to: "/acts", label: "Acts" }],
+        items: [
+            { to: "/acts", label: "Acts", roles: TECHNICIAN_ROLES },
+            { to: "/map", label: "Map", roles: TECHNICIAN_ROLES },
+        ],
     },
     {
         title: "Reference",
-        items: [{ to: "/dictionaries", label: "Dictionaries" }],
+        items: [{ to: "/dictionaries", label: "Dictionaries", roles: ADMIN_ROLES }],
+    },
+    {
+        title: "System",
+        items: [{ to: "/users", label: "Users", roles: SUPER_ADMIN_ROLES }],
     },
 ];
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+const navLinkClass = ({ isActive, isLocked }: { isActive: boolean; isLocked?: boolean }) =>
     [
         "block rounded-xl px-3 py-2 text-sm transition",
         "focus:outline-none focus:ring-2 focus:ring-neutral-400/40 dark:focus:ring-neutral-500/40",
+        isLocked ? "opacity-60" : "",
         isActive
             ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
             : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-900",
@@ -46,8 +66,10 @@ function initials(email?: string) {
 }
 
 export const AppLayout = () => {
-    const { isAuthenticated, user, logout } = useAuth();
+    const { isAuthenticated, user, logout, hasRole } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const { isViewerOnly } = usePermissions();
+    const location = useLocation();
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [navOpen, setNavOpen] = useState(true);
@@ -61,6 +83,17 @@ export const AppLayout = () => {
         document.addEventListener("mousedown", onDoc);
         return () => document.removeEventListener("mousedown", onDoc);
     }, []);
+
+    const filteredSections = navSections
+        .map((section) => {
+            const items = isViewerOnly
+                ? section.items
+                : section.items.filter((item) => !item.roles || hasRole(...item.roles));
+            return { ...section, items };
+        })
+        .filter((section) => section.items.length > 0);
+
+    const shouldBlur = isViewerOnly && !location.pathname.startsWith("/profile");
 
     return (
         <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
@@ -184,16 +217,24 @@ export const AppLayout = () => {
                                     navOpen ? "max-h-[680px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
                                 ].join(" ")}
                             >
-                                {navSections.map((section) => (
+                                {filteredSections.map((section) => (
                                     <div key={section.title} className="space-y-1">
                                         <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
                                             {section.title}
                                         </div>
-                                        {section.items.map((i) => (
-                                            <NavLink key={i.to} to={i.to} className={navLinkClass} end={i.to === "/"}>
-                                                {i.label}
-                                            </NavLink>
-                                        ))}
+                                        {section.items.map((i) => {
+                                            const isLocked = !!i.roles?.length && isViewerOnly && !hasRole(...i.roles);
+                                            return (
+                                                <NavLink
+                                                    key={i.to}
+                                                    to={i.to}
+                                                    className={({ isActive }) => navLinkClass({ isActive, isLocked })}
+                                                    end={i.to === "/"}
+                                                >
+                                                    {i.label}
+                                                </NavLink>
+                                            );
+                                        })}
                                     </div>
                                 ))}
                             </nav>
@@ -211,8 +252,28 @@ export const AppLayout = () => {
                 </aside>
 
                 {/* Content */}
-                <main className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-                    <Outlet />
+                <main className="relative min-w-0 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+                    {shouldBlur ? (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 p-6 text-center backdrop-blur-sm dark:bg-neutral-950/60">
+                            <div className="max-w-md rounded-2xl border border-neutral-200 bg-white/90 p-5 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950/90">
+                                <div className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                                    Preview mode
+                                </div>
+                                <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-300">
+                                    Only the profile is available for this role. Ask an administrator to assign a role.
+                                </p>
+                                <Link
+                                    to="/profile"
+                                    className="mt-3 inline-flex items-center justify-center rounded-xl bg-neutral-900 px-4 py-2 text-xs font-medium text-white hover:bg-black dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+                                >
+                                    Go to profile
+                                </Link>
+                            </div>
+                        </div>
+                    ) : null}
+                    <div className={shouldBlur ? "pointer-events-none blur-sm" : ""}>
+                        <Outlet />
+                    </div>
                 </main>
             </div>
         </div>

@@ -16,6 +16,31 @@ import { useTheme } from "@/app/theme/ThemeProvider";
 type RangePreset = "1h" | "24h" | "7d";
 type ViewMode = "grid" | "heatmap" | "points" | "all";
 type GridMetric = "sum" | "avg" | "kde";
+type KpiFilterKey = "all" | "ok" | "fault" | "off" | "warn" | "sla" | "complaints";
+
+const kpiFilterLabels: Record<KpiFilterKey, string> = {
+    all: "Все",
+    ok: "Исправно",
+    fault: "Аварии",
+    off: "Офлайн",
+    warn: "В ремонте",
+    sla: "SLA",
+    complaints: "Жалобы",
+};
+
+const statusLabels: Record<MapPoint["status"], string> = {
+    OK: "Исправно",
+    WARN: "В ремонте",
+    OFF: "Офлайн",
+    FAULT: "Авария",
+};
+
+const statusBadgeClasses: Record<MapPoint["status"], string> = {
+    OK: "border-green-200 bg-green-50 text-green-700 dark:border-green-500/40 dark:bg-green-500/10 dark:text-green-300",
+    WARN: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300",
+    OFF: "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-500/40 dark:bg-slate-500/10 dark:text-slate-200",
+    FAULT: "border-red-200 bg-red-50 text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300",
+};
 
 function rangeToDates(preset: RangePreset) {
     const to = new Date();
@@ -225,6 +250,7 @@ export function MapPage() {
     const [data, setData] = useState<MapDataResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [kpiFilter, setKpiFilter] = useState<KpiFilterKey>("all");
 
     const [activePoint, setActivePoint] = useState<MapPoint | null>(null);
     const [activeCell, setActiveCell] = useState<{
@@ -238,6 +264,90 @@ export function MapPage() {
     } | null>(null);
 
     const { from, to } = useMemo(() => rangeToDates(preset), [preset]);
+    const allPoints = data?.points ?? [];
+
+    const pointStats = useMemo(() => {
+        let ok = 0;
+        let warn = 0;
+        let off = 0;
+        let fault = 0;
+
+        for (const p of allPoints) {
+            if (p.status === "OK") ok += 1;
+            if (p.status === "WARN") warn += 1;
+            if (p.status === "OFF") off += 1;
+            if (p.status === "FAULT") fault += 1;
+        }
+
+        return { total: allPoints.length, ok, warn, off, fault };
+    }, [allPoints]);
+
+    const slaPct = pointStats.total ? Math.round((pointStats.ok / pointStats.total) * 100) : 0;
+
+    const kpiCards = useMemo(
+        () => [
+            {
+                key: "ok" as const,
+                title: "Исправно",
+                value: pointStats.ok,
+                caption: pointStats.total ? `из ${pointStats.total}` : "нет данных",
+                accent: "bg-green-500",
+            },
+            {
+                key: "fault" as const,
+                title: "Аварии",
+                value: pointStats.fault,
+                caption: "критические",
+                accent: "bg-red-500",
+            },
+            {
+                key: "off" as const,
+                title: "Офлайн",
+                value: pointStats.off,
+                caption: "нет связи",
+                accent: "bg-slate-500",
+            },
+            {
+                key: "warn" as const,
+                title: "В ремонте",
+                value: pointStats.warn,
+                caption: "в работе",
+                accent: "bg-amber-500",
+            },
+            {
+                key: "sla" as const,
+                title: "SLA",
+                value: `${slaPct}%`,
+                caption: pointStats.total ? `${pointStats.ok}/${pointStats.total}` : "нет данных",
+                accent: "bg-sky-500",
+            },
+            {
+                key: "complaints" as const,
+                title: "Жалобы",
+                value: pointStats.fault,
+                caption: "обращения",
+                accent: "bg-rose-500",
+            },
+        ],
+        [pointStats, slaPct]
+    );
+
+    const filteredPoints = useMemo(() => {
+        if (kpiFilter === "all") return allPoints;
+        const matches =
+            kpiFilter === "ok"
+                ? (p: MapPoint) => p.status === "OK"
+                : kpiFilter === "fault"
+                  ? (p: MapPoint) => p.status === "FAULT"
+                  : kpiFilter === "off"
+                    ? (p: MapPoint) => p.status === "OFF"
+                    : kpiFilter === "warn"
+                      ? (p: MapPoint) => p.status === "WARN"
+                      : kpiFilter === "sla"
+                        ? (p: MapPoint) => p.status === "OK"
+                        : (p: MapPoint) => p.status === "FAULT";
+        return allPoints.filter(matches);
+    }, [allPoints, kpiFilter]);
 
     const load = async () => {
         try {
@@ -278,7 +388,7 @@ export function MapPage() {
 
     // ---- points geojson ----
     const pointsGeoJson: FeatureCollection<GeoPoint, PointFeatureProps> = useMemo(() => {
-        const points = data?.points ?? [];
+        const points = filteredPoints;
         return {
             type: "FeatureCollection",
             features: points.map(
@@ -297,17 +407,17 @@ export function MapPage() {
                 })
             ),
         };
-    }, [data]);
+    }, [filteredPoints]);
 
     const maxPointKw = useMemo(() => {
-        const arr = data?.points?.map((p) => p.loadKw) ?? [];
+        const arr = filteredPoints.map((p) => p.loadKw);
         const m = arr.length ? Math.max(...arr) : 1;
         return m > 0 ? m : 1;
-    }, [data]);
+    }, [filteredPoints]);
 
     // ---- GRID + KDE (blur) + contours ----
     const gridComputed = useMemo(() => {
-        const points = data?.points ?? [];
+        const points = filteredPoints;
 
         const emptyGrid: FeatureCollection<Polygon, GridFeatureProps> = { type: "FeatureCollection", features: [] };
         const emptyContours: FeatureCollection<MultiLineString, { level: number }> = {
@@ -641,7 +751,7 @@ export function MapPage() {
         };
 
         return { gridGeo, contoursGeo, maxSum, maxAvg, maxKde, minLng, minLat, dLng, dLat };
-    }, [data, cellSizeM, blurRadiusM, showContours]);
+    }, [filteredPoints, cellSizeM, blurRadiusM, showContours]);
 
     const intensityProp = metric === "sum" ? "intensitySum" : metric === "avg" ? "intensityAvg" : "intensityKde";
 
@@ -806,25 +916,25 @@ export function MapPage() {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-semibold tracking-tight">Map</h1>
+                    <h1 className="text-2xl font-semibold tracking-tight">Сводка и карта</h1>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                        Barnaul • фронтовая агрегация: KDE blur + contours + grid.
+                        Сводные показатели по освещению и фильтрация карты по статусам.
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-3">
                     <select
                         value={preset}
                         onChange={(e) => setPreset(e.target.value as RangePreset)}
                         className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950"
                     >
-                        <option value="1h">Last 1 hour</option>
-                        <option value="24h">Last 24 hours</option>
-                        <option value="7d">Last 7 days</option>
+                        <option value="1h">Последний час</option>
+                        <option value="24h">Последние 24 часа</option>
+                        <option value="7d">Последние 7 дней</option>
                     </select>
 
                     <select
@@ -832,30 +942,30 @@ export function MapPage() {
                         onChange={(e) => setMode(e.target.value as ViewMode)}
                         className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950"
                     >
-                        <option value="all">Grid + Heatmap + Points</option>
-                        <option value="grid">Grid only</option>
-                        <option value="heatmap">Heatmap only</option>
-                        <option value="points">Points only</option>
+                        <option value="all">Сетка + теплокарта + точки</option>
+                        <option value="grid">Только сетка</option>
+                        <option value="heatmap">Только теплокарта</option>
+                        <option value="points">Только точки</option>
                     </select>
 
                     <select
                         value={metric}
                         onChange={(e) => setMetric(e.target.value as GridMetric)}
                         className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950"
-                        title="Какая метрика окрашивает grid"
+                        title="Метрика окраски сетки"
                     >
-                        <option value="kde">Grid metric: KDE (blur)</option>
-                        <option value="sum">Grid metric: SUM kW</option>
-                        <option value="avg">Grid metric: AVG kW</option>
+                        <option value="kde">Метрика сетки: KDE (размытие)</option>
+                        <option value="sum">Метрика сетки: сумма кВт</option>
+                        <option value="avg">Метрика сетки: средняя кВт</option>
                     </select>
 
                     <div className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950">
-                        <span className="text-xs text-neutral-500 dark:text-neutral-400">Cell</span>
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">Ячейка</span>
                         <select
                             value={cellSizeM}
                             onChange={(e) => setCellSizeM(Number(e.target.value))}
                             className="bg-transparent text-sm outline-none"
-                            title="Размер клетки"
+                            title="Размер ячейки"
                         >
                             <option value={200}>200m</option>
                             <option value={350}>350m</option>
@@ -865,12 +975,12 @@ export function MapPage() {
                     </div>
 
                     <div className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950">
-                        <span className="text-xs text-neutral-500 dark:text-neutral-400">Blur</span>
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">Размытие</span>
                         <select
                             value={blurRadiusM}
                             onChange={(e) => setBlurRadiusM(Number(e.target.value))}
                             className="bg-transparent text-sm outline-none"
-                            title="Радиус сглаживания (KDE sigma ~ radius)"
+                            title="Радиус размытия (KDE)"
                         >
                             <option value={350}>350m</option>
                             <option value={650}>650m</option>
@@ -885,7 +995,7 @@ export function MapPage() {
                             checked={showContours}
                             onChange={(e) => setShowContours(e.target.checked)}
                         />
-                        Contours
+                        Изолинии
                     </label>
 
                     <button
@@ -894,9 +1004,45 @@ export function MapPage() {
                         className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                         disabled={loading}
                     >
-                        {loading ? "Loading…" : "Refresh"}
+                        {loading ? "Загрузка..." : "Обновить"}
                     </button>
                 </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {kpiCards.map((card) => {
+                    const isActive = kpiFilter === card.key;
+                    return (
+                        <button
+                            key={card.key}
+                            type="button"
+                            onClick={() => setKpiFilter((prev) => (prev === card.key ? "all" : card.key))}
+                            className={[
+                                "group flex h-full w-full flex-col justify-between rounded-2xl border p-4 text-left transition",
+                                "bg-white shadow-sm dark:bg-neutral-950",
+                                isActive
+                                    ? "border-neutral-900 ring-2 ring-neutral-900/10 dark:border-neutral-100 dark:ring-neutral-100/10"
+                                    : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700",
+                            ].join(" ")}
+                            aria-pressed={isActive}
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="space-y-2">
+                                    <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                                        {card.title}
+                                    </div>
+                                    <div className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+                                        {card.value}
+                                    </div>
+                                </div>
+                                <div className={`h-9 w-9 rounded-full ${card.accent} opacity-80`} />
+                            </div>
+                            <div className="pt-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                {card.caption}
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
 
             {error && (
@@ -904,19 +1050,36 @@ export function MapPage() {
             )}
 
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-                    <div>
-                        <div className="text-sm font-medium">Barnaul • KDE blur + contours</div>
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+                    <div className="space-y-2">
+                        <div className="text-sm font-medium">Барнаул • KDE blur + изолинии</div>
                         <div className="text-xs text-neutral-600 dark:text-neutral-300">
-                            Клик по клетке → popup. Контуры рисуются по KDE (metric=kde).
+                            Клик по клетке или точке открывает детали. Контуры строятся по KDE (метрика=kde).
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                            <span className="rounded-full border border-neutral-200 px-3 py-2 dark:border-neutral-800">
+                                Фильтр: {kpiFilterLabels[kpiFilter]}
+                            </span>
+                            <span>
+                                Показано: {filteredPoints.length} из {pointStats.total}
+                            </span>
+                            {kpiFilter !== "all" ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setKpiFilter("all")}
+                                    className="rounded-full border border-neutral-200 px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                                >
+                                    Сбросить
+                                </button>
+                            ) : null}
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3 text-xs text-neutral-600 dark:text-neutral-300">
-                        <span>Intensity</span>
+                        <span>Интенсивность</span>
                         <div className="h-2 w-36 rounded-full bg-gradient-to-r from-green-500 via-amber-400 to-red-600 opacity-80" />
-                        <span>low</span>
-                        <span>high</span>
+                        <span>низкая</span>
+                        <span>высокая</span>
                     </div>
                 </div>
 
@@ -955,22 +1118,22 @@ export function MapPage() {
                                 onClose={() => setActiveCell(null)}
                             >
                                 <div className="space-y-1">
-                                    <div className="text-sm font-semibold">Cell {activeCell.key}</div>
+                                    <div className="text-sm font-semibold">Ячейка {activeCell.key}</div>
                                     <div className="text-xs text-neutral-700">
                                         <div>
-                                            <b>Points:</b> {activeCell.count}
+                                            <b>Точки:</b> {activeCell.count}
                                         </div>
                                         <div>
-                                            <b>SUM:</b> {activeCell.sumKw.toFixed(2)} kW
+                                            <b>Сумма:</b> {activeCell.sumKw.toFixed(2)} кВт
                                         </div>
                                         <div>
-                                            <b>AVG:</b> {activeCell.avgKw.toFixed(2)} kW / point
+                                            <b>Среднее:</b> {activeCell.avgKw.toFixed(2)} кВт / точку
                                         </div>
                                         <div>
-                                            <b>KDE:</b> {activeCell.kdeKw.toFixed(2)} (blur)
+                                            <b>KDE:</b> {activeCell.kdeKw.toFixed(2)} (размытие)
                                         </div>
                                         <div className="pt-1 text-[11px] text-neutral-500">
-                                            Grid metric now: {metric.toUpperCase()}
+                                            Текущая метрика: {metric.toUpperCase()}
                                         </div>
                                     </div>
                                 </div>
@@ -992,19 +1155,83 @@ export function MapPage() {
                                             <b>ID:</b> {activePoint.id}
                                         </div>
                                         <div>
-                                            <b>Status:</b> {activePoint.status}
+                                            <b>Статус:</b> {statusLabels[activePoint.status]}
                                         </div>
                                         <div>
-                                            <b>Load:</b> {activePoint.loadKw} kW ({activePoint.loadPct}%)
+                                            <b>Нагрузка:</b> {activePoint.loadKw} кВт ({activePoint.loadPct}%)
                                         </div>
                                         <div>
-                                            <b>Updated:</b> {new Date(activePoint.updatedAt).toLocaleString()}
+                                            <b>Обновлено:</b> {new Date(activePoint.updatedAt).toLocaleString()}
                                         </div>
                                     </div>
                                 </div>
                             </Popup>
                         )}
                     </MapGL>
+                </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+                    <div className="space-y-1">
+                        <div className="text-sm font-medium">Список точек</div>
+                        <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                            Фильтр: {kpiFilterLabels[kpiFilter]} • Показано {filteredPoints.length} из{" "}
+                            {pointStats.total}
+                        </div>
+                    </div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                        Диапазон: {new Date(from).toLocaleString()} — {new Date(to).toLocaleString()}
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500 dark:bg-neutral-900/40 dark:text-neutral-400">
+                            <tr>
+                                <th className="px-4 py-3 text-left font-semibold">Объект</th>
+                                <th className="px-4 py-3 text-left font-semibold">Статус</th>
+                                <th className="px-4 py-3 text-left font-semibold">Нагрузка, кВт</th>
+                                <th className="px-4 py-3 text-left font-semibold">Нагрузка, %</th>
+                                <th className="px-4 py-3 text-left font-semibold">Обновлено</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                            {filteredPoints.length ? (
+                                filteredPoints.map((point) => (
+                                    <tr key={point.id} className="text-neutral-700 dark:text-neutral-200">
+                                        <td className="px-4 py-2 font-medium text-neutral-900 dark:text-neutral-100">
+                                            {point.name}
+                                        </td>
+                                        <td className="px-4 py-2">
+                                            <span
+                                                className={[
+                                                    "inline-flex items-center rounded-full border px-3 py-2 text-xs font-medium",
+                                                    statusBadgeClasses[point.status],
+                                                ].join(" ")}
+                                            >
+                                                {statusLabels[point.status]}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-2">{point.loadKw.toFixed(2)}</td>
+                                        <td className="px-4 py-2">{point.loadPct.toFixed(0)}%</td>
+                                        <td className="px-4 py-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                            {new Date(point.updatedAt).toLocaleString()}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td
+                                        colSpan={5}
+                                        className="px-4 py-6 text-center text-sm text-neutral-500 dark:text-neutral-400"
+                                    >
+                                        Нет данных по выбранному фильтру.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

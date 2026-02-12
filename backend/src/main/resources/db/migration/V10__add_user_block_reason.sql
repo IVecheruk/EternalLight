@@ -1,0 +1,2 @@
+ALTER TABLE app_user
+    ADD COLUMN IF NOT EXISTS blocked_reason VARCHAR(500);

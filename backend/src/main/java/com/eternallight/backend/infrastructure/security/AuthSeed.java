@@ -2,6 +2,7 @@ package com.eternallight.backend.infrastructure.security;
 
 import com.eternallight.backend.infrastructure.db.entity.UserEntity;
 import com.eternallight.backend.infrastructure.db.repository.UserRepository;
+import com.eternallight.backend.infrastructure.security.RoleUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,19 +17,28 @@ public class AuthSeed implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // admin@eternallight.local / admin
-        String email = "admin@eternallight.local";
-
-        if (userRepository.existsByEmail(email)) {
-            return;
+        // superadmin@eternallight.local / superadmin
+        String superEmail = "superadmin@eternallight.local";
+        if (!userRepository.existsByEmail(superEmail)) {
+            UserEntity superAdmin = UserEntity.builder()
+                    .email(superEmail.toLowerCase().trim())
+                    .passwordHash(encoder.encode("superadmin"))
+                    .role(RoleUtils.SUPER_ADMIN)
+                    .isActive(true)
+                    .build();
+            userRepository.save(superAdmin);
         }
 
-        UserEntity admin = UserEntity.builder()
-                .email(email.toLowerCase().trim())
-                .passwordHash(encoder.encode("admin"))
-                .role("ADMIN")
-                .build();
-
-        userRepository.save(admin);
+        // admin@eternallight.local / admin
+        String email = "admin@eternallight.local";
+        if (!userRepository.existsByEmail(email)) {
+            UserEntity admin = UserEntity.builder()
+                    .email(email.toLowerCase().trim())
+                    .passwordHash(encoder.encode("admin"))
+                    .role(RoleUtils.ADMIN)
+                    .isActive(true)
+                    .build();
+            userRepository.save(admin);
+        }
     }
 }

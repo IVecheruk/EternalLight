@@ -1,6 +1,7 @@
 package com.eternallight.backend.infrastructure.security;
 
 import com.eternallight.backend.infrastructure.db.repository.UserRepository;
+import com.eternallight.backend.infrastructure.security.RoleUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -69,7 +70,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             userRepository.findByEmail(email).ifPresent(user -> {
-                String role = user.getRole(); // USER/ADMIN
+                if (!Boolean.TRUE.equals(user.getIsActive())) {
+                    return;
+                }
+                String role = RoleUtils.normalize(user.getRole());
+                if (role.isBlank()) {
+                    return;
+                }
                 var auth = new UsernamePasswordAuthenticationToken(
                         user.getEmail(),
                         null,

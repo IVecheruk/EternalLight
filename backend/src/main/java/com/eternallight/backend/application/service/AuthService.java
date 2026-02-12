@@ -6,22 +6,14 @@ import com.eternallight.backend.api.dto.auth.TokenResponse;
 import com.eternallight.backend.infrastructure.db.entity.UserEntity;
 import com.eternallight.backend.infrastructure.db.repository.UserRepository;
 import com.eternallight.backend.infrastructure.security.JwtService;
+import com.eternallight.backend.infrastructure.security.RoleUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Set;
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-
-    private static final Set<String> ALLOWED_ROLES = Set.of(
-            "SUPER_ADMIN",
-            "ORG_ADMIN",
-            "DISPATCHER",
-            "TECHNICIAN"
-    );
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -34,12 +26,13 @@ public class AuthService {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        String role = resolveRole(req.role());
+        String role = RoleUtils.USER;
 
         UserEntity user = UserEntity.builder()
                 .email(email)
                 .passwordHash(passwordEncoder.encode(req.password()))
                 .role(role)
+                .isActive(true)
                 .build();
 
         user = userRepository.save(user);
@@ -58,6 +51,14 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            String reason = user.getBlockedReason();
+            if (reason != null && !reason.isBlank()) {
+                throw new IllegalArgumentException("User is blocked: " + reason.trim());
+            }
+            throw new IllegalArgumentException("User is blocked");
+        }
+
         String token = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
         return new TokenResponse(token, "Bearer");
     }
@@ -67,16 +68,4 @@ public class AuthService {
         return email.toLowerCase().trim();
     }
 
-    private String resolveRole(String rawRole) {
-        if (rawRole == null || rawRole.isBlank()) {
-            return "TECHNICIAN";
-        }
-
-        String role = rawRole.trim().toUpperCase();
-        if (!ALLOWED_ROLES.contains(role)) {
-            throw new IllegalArgumentException("Unsupported role. Allowed roles: " + ALLOWED_ROLES);
-        }
-
-        return role;
-    }
 }

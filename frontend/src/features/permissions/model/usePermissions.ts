@@ -1,38 +1,37 @@
 import { useMemo } from "react";
 import { useAuth } from "@/features/auth/model/useAuth";
-
-export const SYSTEM_ROLES = {
-    SUPER_ADMIN: "SUPER_ADMIN",
-    ORG_ADMIN: "ORG_ADMIN",
-    DISPATCHER: "DISPATCHER",
-    TECHNICIAN: "TECHNICIAN",
-} as const;
-
-export type SystemRole = (typeof SYSTEM_ROLES)[keyof typeof SYSTEM_ROLES];
+import { SYSTEM_ROLES } from "./roles";
 
 export function usePermissions() {
     const { isAuthenticated, roles, hasRole } = useAuth();
 
     return useMemo(() => {
         const isSuperAdmin = hasRole(SYSTEM_ROLES.SUPER_ADMIN);
-        const isOrgAdmin = hasRole(SYSTEM_ROLES.ORG_ADMIN);
-        const canManageUsers = isSuperAdmin || isOrgAdmin;
-        const canManageDictionaries = isSuperAdmin || isOrgAdmin;
-        const canManageActs = hasRole(
-            SYSTEM_ROLES.SUPER_ADMIN,
-            SYSTEM_ROLES.ORG_ADMIN,
-            SYSTEM_ROLES.DISPATCHER,
-            SYSTEM_ROLES.TECHNICIAN
-        );
+        const isAdmin = hasRole(SYSTEM_ROLES.ADMIN);
+        const isTechnician = hasRole(SYSTEM_ROLES.TECHNICIAN);
+        const hasAnyRole = roles.length > 0;
+        const isUser = hasRole(SYSTEM_ROLES.USER) || !hasAnyRole;
+        const isViewerOnly = isUser && !isSuperAdmin && !isAdmin && !isTechnician;
+
+        const canManageUsers = isSuperAdmin;
+        const canManageDictionaries = isAdmin || isSuperAdmin;
+        const canManageActs = isTechnician || isAdmin || isSuperAdmin;
+        const canAccessAdmin = isAdmin || isSuperAdmin;
+        const canAccessMap = isTechnician || isAdmin || isSuperAdmin;
 
         return {
             isAuthenticated,
             roles,
             isSuperAdmin,
-            isOrgAdmin,
+            isAdmin,
+            isTechnician,
+            isUser,
+            isViewerOnly,
             canManageUsers,
             canManageDictionaries,
             canManageActs,
+            canAccessAdmin,
+            canAccessMap,
         };
     }, [hasRole, isAuthenticated, roles]);
 }

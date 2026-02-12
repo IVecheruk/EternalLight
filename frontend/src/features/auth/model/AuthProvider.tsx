@@ -2,14 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { authApi } from "@/features/auth/api/authApi";
 import type { LoginRequest, RegisterRequest, MeResponse } from "@/features/auth/api/types";
 import { AuthContext, type AuthContextValue } from "./AuthContext";
+import { toRoleVariants } from "@/features/permissions/model/roles";
 
 const TOKEN_KEY = "accessToken";
 
 function expandRole(role: string): string[] {
-    const trimmed = role.trim();
-    if (!trimmed) return [];
-    if (trimmed.startsWith("ROLE_")) return [trimmed, trimmed.slice(5)];
-    return [trimmed, `ROLE_${trimmed}`];
+    return toRoleVariants(role);
 }
 
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {

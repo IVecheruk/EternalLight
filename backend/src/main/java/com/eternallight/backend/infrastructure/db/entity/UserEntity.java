@@ -24,7 +24,13 @@ public class UserEntity {
     private String passwordHash;
 
     @Column(nullable = false, length = 60)
-    private String role; // SUPER_ADMIN / ORG_ADMIN / DISPATCHER / TECHNICIAN
+    private String role; // SUPER_ADMIN / ADMIN / TECHNICIAN / USER
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive;
+
+    @Column(name = "blocked_reason", length = 500)
+    private String blockedReason;
 
     @Column(name = "full_name", length = 200)
     private String fullName;

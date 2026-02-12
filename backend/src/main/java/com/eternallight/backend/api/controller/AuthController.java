@@ -9,6 +9,7 @@ import com.eternallight.backend.application.service.AuthService;
 import com.eternallight.backend.domain.exception.NotFoundException;
 import com.eternallight.backend.infrastructure.db.entity.UserEntity;
 import com.eternallight.backend.infrastructure.db.repository.UserRepository;
+import com.eternallight.backend.infrastructure.security.RoleUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -62,10 +63,12 @@ public class AuthController {
     }
 
     private MeResponse toMeResponse(UserEntity user) {
+        String role = RoleUtils.normalize(user.getRole());
+        List<String> roles = role.isBlank() ? List.of() : List.of(role);
         return new MeResponse(
                 user.getId(),
                 user.getEmail(),
-                List.of(user.getRole()),
+                roles,
                 user.getFullName(),
                 user.getAddress(),
                 user.getBirthDate(),
