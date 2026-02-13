@@ -202,7 +202,6 @@ export function LightingObjectsPage() {
     return (
         <TablePage<LightingObject>
             title="Объекты освещения"
-            subtitle="Полный CRUD с привязкой к району/улице и координатами."
             load={load}
             getRowId={(o) => o.id}
             columns={columns}

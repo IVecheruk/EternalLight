@@ -115,7 +115,7 @@ export const router = createBrowserRouter([
                         path: "map",
                         element: (
                             <RoleGuard roles={TECHNICIAN_ROLES} fallbackPath="/profile" allowUserPreview>
-                                <MapPage />
+                                <MapPage dataSource="api" allowAddPoints />
                             </RoleGuard>
                         ),
                     },

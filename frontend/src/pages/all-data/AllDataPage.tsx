@@ -3,6 +3,45 @@ import { http } from "@/shared/api/http";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+const PDF_FONT_NAME = "DejaVuSans";
+const PDF_FONT_FILE = "DejaVuSans.ttf";
+const PDF_FONT_URL = "/fonts/DejaVuSans.ttf";
+let pdfFontBase64Promise: Promise<string> | null = null;
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+}
+
+async function loadPdfFontBase64(): Promise<string> {
+    if (!pdfFontBase64Promise) {
+        pdfFontBase64Promise = fetch(PDF_FONT_URL)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load PDF font: ${response.status}`);
+                }
+                return response.arrayBuffer();
+            })
+            .then(arrayBufferToBase64);
+    }
+    return pdfFontBase64Promise;
+}
+
+function applyPdfFont(doc: jsPDF, fontBase64: string) {
+    const fontList = doc.getFontList?.() ?? {};
+    const hasFont = Object.prototype.hasOwnProperty.call(fontList, PDF_FONT_NAME);
+    if (!hasFont) {
+        doc.addFileToVFS(PDF_FONT_FILE, fontBase64);
+        doc.addFont(PDF_FONT_FILE, PDF_FONT_NAME, "normal");
+    }
+    doc.setFont(PDF_FONT_NAME, "normal");
+}
+
 type Section = {
     key: string;
     title: string;
@@ -226,29 +265,43 @@ export function AllDataPage() {
         [state, exporting]
     );
 
-    const exportPdf = useCallback(() => {
+    const exportPdf = useCallback(async () => {
         setExporting(true);
         try {
+            const fontBase64 = await loadPdfFontBase64().catch((error) => {
+                console.error("Failed to load PDF font", error);
+                return null;
+            });
             const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+            const tableFont = fontBase64 ? PDF_FONT_NAME : "helvetica";
+            if (fontBase64) {
+                applyPdfFont(doc, fontBase64);
+            } else {
+                doc.setFont(tableFont, "normal");
+            }
             const pageHeight = doc.internal.pageSize.getHeight();
             let cursorY = 40;
 
+            doc.setFont(tableFont, "normal");
             doc.setFontSize(16);
             doc.text("Сводные данные БД", 40, cursorY);
             cursorY += 24;
 
             const addSection = (title: string, rows: Record<string, unknown>[], note?: string) => {
+                doc.setFont(tableFont, "normal");
                 doc.setFontSize(12);
                 doc.text(title, 40, cursorY);
                 cursorY += 12;
 
                 if (note) {
+                    doc.setFont(tableFont, "normal");
                     doc.setFontSize(9);
                     doc.text(note, 40, cursorY);
                     cursorY += 10;
                 }
 
                 if (!rows.length) {
+                    doc.setFont(tableFont, "normal");
                     doc.setFontSize(9);
                     doc.text("Нет данных", 40, cursorY);
                     cursorY += 12;
@@ -261,8 +314,8 @@ export function AllDataPage() {
                     startY: cursorY,
                     head: [columns],
                     body,
-                    styles: { fontSize: 8, cellPadding: 3 },
-                    headStyles: { fillColor: [23, 23, 23], textColor: 255 },
+                    styles: { font: tableFont, fontSize: 8, cellPadding: 3 },
+                    headStyles: { font: tableFont, fillColor: [23, 23, 23], textColor: 255 },
                 });
 
                 const lastTable = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable;
@@ -282,6 +335,7 @@ export function AllDataPage() {
             });
 
             if (detailsLoadedFor) {
+                doc.setFont(tableFont, "normal");
                 doc.setFontSize(12);
                 doc.text(`Детали акта: ID ${detailsLoadedFor}`, 40, cursorY);
                 cursorY += 16;

@@ -34,4 +34,5 @@ export type MapDataResponse = {
 export type MapLoadParams = {
     from: string;
     to: string;
+    useMock?: boolean;
 };

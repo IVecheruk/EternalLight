@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import MapGL, { Popup, Source, Layer } from "react-map-gl/maplibre";
 import type { MapLayerMouseEvent, MapGeoJSONFeature, LayerProps } from "react-map-gl/maplibre";
 import type {
@@ -11,7 +11,14 @@ import type {
 
 import { mapApi } from "@/entities/map/api/mapApi";
 import type { MapDataResponse, MapPoint } from "@/entities/map/model/types";
+import { lightingObjectApi } from "@/entities/lighting-object/api/lightingObjectApi";
+import type { LightingObjectUpsertRequest } from "@/entities/lighting-object/model/types";
+import { districtApi } from "@/entities/district/api/districtApi";
+import { streetApi } from "@/entities/street/api/streetApi";
+import type { District } from "@/entities/district/model/types";
+import type { Street } from "@/entities/street/model/types";
 import { useTheme } from "@/app/theme/ThemeProvider";
+import { Modal } from "@/shared/ui/Modal";
 
 type RangePreset = "1h" | "24h" | "7d";
 type ViewMode = "grid" | "heatmap" | "points" | "all";
@@ -112,6 +119,24 @@ type PointFeatureProps = {
     loadPct: number;
     updatedAt: string;
     weight: number;
+};
+
+type MapPageProps = {
+    dataSource?: "auto" | "mock" | "api";
+    allowAddPoints?: boolean;
+};
+
+const blankPointForm: LightingObjectUpsertRequest = {
+    administrativeDistrictId: 0,
+    streetId: 0,
+    houseLandmark: null,
+    gpsLatitude: null,
+    gpsLongitude: null,
+    outdoorLineNumber: null,
+    controlCabinetNumber: null,
+    poleNumber: null,
+    luminaireNumber: null,
+    equipmentInventoryNumber: null,
 };
 
 function isGridFeature(f: MapGeoJSONFeature): f is MapGeoJSONFeature & { properties: GridFeatureProps } {
@@ -236,7 +261,7 @@ function buildContours(
     return { type: "FeatureCollection", features };
 }
 
-export function MapPage() {
+export function MapPage({ dataSource = "auto", allowAddPoints = false }: MapPageProps) {
     const { theme } = useTheme();
 
     const [preset, setPreset] = useState<RangePreset>("1h");
@@ -252,6 +277,17 @@ export function MapPage() {
     const [error, setError] = useState<string | null>(null);
     const [kpiFilter, setKpiFilter] = useState<KpiFilterKey>("all");
 
+    const [addOpen, setAddOpen] = useState(false);
+    const [addForm, setAddForm] = useState<LightingObjectUpsertRequest>({ ...blankPointForm });
+    const [addError, setAddError] = useState<string | null>(null);
+    const [addLoading, setAddLoading] = useState(false);
+    const [pickMode, setPickMode] = useState(false);
+
+    const [districts, setDistricts] = useState<District[]>([]);
+    const [streets, setStreets] = useState<Street[]>([]);
+    const [refsLoading, setRefsLoading] = useState(false);
+    const [refsError, setRefsError] = useState<string | null>(null);
+
     const [activePoint, setActivePoint] = useState<MapPoint | null>(null);
     const [activeCell, setActiveCell] = useState<{
         key: string;
@@ -265,6 +301,97 @@ export function MapPage() {
 
     const { from, to } = useMemo(() => rangeToDates(preset), [preset]);
     const allPoints = data?.points ?? [];
+
+    const updateAddForm = useCallback(
+        (key: keyof LightingObjectUpsertRequest, value: LightingObjectUpsertRequest[keyof LightingObjectUpsertRequest]) => {
+            setAddForm((prev) => ({ ...prev, [key]: value }));
+        },
+        []
+    );
+
+    const openAddModal = useCallback(() => {
+        setAddForm({ ...blankPointForm });
+        setAddError(null);
+        setAddOpen(true);
+        setPickMode(false);
+    }, []);
+
+    const closeAddModal = useCallback(() => {
+        setAddOpen(false);
+        setPickMode(false);
+    }, []);
+
+    const cancelAddModal = useCallback(() => {
+        closeAddModal();
+        setAddError(null);
+        setAddForm({ ...blankPointForm });
+    }, [closeAddModal]);
+
+    const startPickMode = useCallback(() => {
+        setPickMode(true);
+        setAddOpen(false);
+    }, []);
+
+    const loadRefs = useCallback(async () => {
+        setRefsLoading(true);
+        setRefsError(null);
+        try {
+            const [d, s] = await Promise.all([districtApi.list(), streetApi.list()]);
+            setDistricts(d);
+            setStreets(s);
+        } catch (e) {
+            setRefsError(e instanceof Error ? e.message : "Не удалось загрузить районы и улицы.");
+        } finally {
+            setRefsLoading(false);
+        }
+    }, []);
+
+    const submitAdd = async () => {
+        if (!allowAddPoints) return;
+
+        if (addForm.administrativeDistrictId <= 0 || addForm.streetId <= 0) {
+            setAddError("Выберите район и улицу.");
+            return;
+        }
+
+        if (
+            addForm.gpsLatitude === null ||
+            addForm.gpsLongitude === null ||
+            Number.isNaN(addForm.gpsLatitude) ||
+            Number.isNaN(addForm.gpsLongitude)
+        ) {
+            setAddError("Укажите корректные координаты.");
+            return;
+        }
+
+        if (
+            addForm.gpsLatitude < -90 ||
+            addForm.gpsLatitude > 90 ||
+            addForm.gpsLongitude < -180 ||
+            addForm.gpsLongitude > 180
+        ) {
+            setAddError("Координаты вне допустимого диапазона.");
+            return;
+        }
+
+        try {
+            setAddLoading(true);
+            setAddError(null);
+            await lightingObjectApi.create(addForm);
+            closeAddModal();
+            setAddForm({ ...blankPointForm });
+            await load();
+        } catch (e) {
+            setAddError(e instanceof Error ? e.message : "Не удалось добавить точку.");
+        } finally {
+            setAddLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!allowAddPoints) return;
+        void loadRefs();
+    }, [allowAddPoints, loadRefs]);
 
     const pointStats = useMemo(() => {
         let ok = 0;
@@ -353,7 +480,9 @@ export function MapPage() {
         try {
             setLoading(true);
             setError(null);
-            const res = await mapApi.load({ from, to });
+            const useMock =
+                dataSource === "mock" ? true : dataSource === "api" ? false : undefined;
+            const res = await mapApi.load({ from, to, useMock });
             setData(res);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Не удалось загрузить данные карты");
@@ -878,6 +1007,20 @@ export function MapPage() {
     }, [mode]);
 
     const onMapClick = (e: MapLayerMouseEvent) => {
+        if (allowAddPoints && pickMode) {
+            setActiveCell(null);
+            setActivePoint(null);
+            setAddError(null);
+            setAddForm((prev) => ({
+                ...prev,
+                gpsLatitude: Number(e.lngLat.lat.toFixed(6)),
+                gpsLongitude: Number(e.lngLat.lng.toFixed(6)),
+            }));
+            setPickMode(false);
+            setAddOpen(true);
+            return;
+        }
+
         const features = (e.features ?? []) as MapGeoJSONFeature[];
 
         const gridF = features.find((f) => f.layer?.id === "grid-fill");
@@ -917,6 +1060,161 @@ export function MapPage() {
 
     return (
         <div className="space-y-6">
+            <Modal open={addOpen} title="Добавить точку" onClose={closeAddModal}>
+                {refsError && (
+                    <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        {refsError}
+                    </div>
+                )}
+                {addError && (
+                    <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        {addError}
+                    </div>
+                )}
+                {refsLoading && (
+                    <div className="mb-3 text-xs text-neutral-500">Загрузка справочников...</div>
+                )}
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Район</span>
+                        <select
+                            value={addForm.administrativeDistrictId}
+                            onChange={(e) => updateAddForm("administrativeDistrictId", Number(e.target.value))}
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        >
+                            <option value={0}>Выберите район</option>
+                            {districts.map((d) => (
+                                <option key={d.id} value={d.id}>
+                                    {d.name}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Улица</span>
+                        <select
+                            value={addForm.streetId}
+                            onChange={(e) => updateAddForm("streetId", Number(e.target.value))}
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        >
+                            <option value={0}>Выберите улицу</option>
+                            {streets.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.name}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Ориентир</span>
+                        <input
+                            value={addForm.houseLandmark ?? ""}
+                            onChange={(e) => updateAddForm("houseLandmark", e.target.value || null)}
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Опора №</span>
+                        <input
+                            value={addForm.poleNumber ?? ""}
+                            onChange={(e) => updateAddForm("poleNumber", e.target.value || null)}
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Светильник №</span>
+                        <input
+                            value={addForm.luminaireNumber ?? ""}
+                            onChange={(e) => updateAddForm("luminaireNumber", e.target.value || null)}
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Инвентарный №</span>
+                        <input
+                            value={addForm.equipmentInventoryNumber ?? ""}
+                            onChange={(e) => updateAddForm("equipmentInventoryNumber", e.target.value || null)}
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Линия НО №</span>
+                        <input
+                            value={addForm.outdoorLineNumber ?? ""}
+                            onChange={(e) => updateAddForm("outdoorLineNumber", e.target.value || null)}
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Шкаф управления №</span>
+                        <input
+                            value={addForm.controlCabinetNumber ?? ""}
+                            onChange={(e) => updateAddForm("controlCabinetNumber", e.target.value || null)}
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Широта</span>
+                        <input
+                            type="number"
+                            step="0.000001"
+                            value={addForm.gpsLatitude ?? ""}
+                            onChange={(e) =>
+                                updateAddForm(
+                                    "gpsLatitude",
+                                    e.target.value === "" ? null : Number(e.target.value)
+                                )
+                            }
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        />
+                    </label>
+                    <label className="space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+                        <span>Долгота</span>
+                        <input
+                            type="number"
+                            step="0.000001"
+                            value={addForm.gpsLongitude ?? ""}
+                            onChange={(e) =>
+                                updateAddForm(
+                                    "gpsLongitude",
+                                    e.target.value === "" ? null : Number(e.target.value)
+                                )
+                            }
+                            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
+                        />
+                    </label>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                    <button
+                        type="button"
+                        onClick={startPickMode}
+                        className="rounded-xl border border-neutral-200 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                        disabled={refsLoading}
+                    >
+                        Выбрать на карте
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={cancelAddModal}
+                            className="rounded-xl border border-neutral-200 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                            disabled={addLoading}
+                        >
+                            Отмена
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void submitAdd()}
+                            className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+                            disabled={addLoading || refsLoading || !!refsError}
+                        >
+                            {addLoading ? "Сохранение..." : "Сохранить"}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
             {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-1">
@@ -927,6 +1225,16 @@ export function MapPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    {allowAddPoints && (
+                        <button
+                            type="button"
+                            onClick={openAddModal}
+                            className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+                            disabled={refsLoading}
+                        >
+                            + Добавить точку
+                        </button>
+                    )}
                     <select
                         value={preset}
                         onChange={(e) => setPreset(e.target.value as RangePreset)}
@@ -1083,7 +1391,12 @@ export function MapPage() {
                     </div>
                 </div>
 
-                <div className="h-[520px]">
+                <div className="relative h-[520px]">
+                    {allowAddPoints && pickMode && (
+                        <div className="absolute left-3 top-3 z-10 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            Кликните по карте, чтобы выбрать координаты.
+                        </div>
+                    )}
                     <MapGL
                         initialViewState={initialViewState}
                         mapStyle={mapStyle}

@@ -48,7 +48,7 @@ function toPoint(object: LightingObject): MapPoint {
 
 export const mapApi = {
     async load(params: MapLoadParams): Promise<MapDataResponse> {
-        const useMock = import.meta.env.VITE_USE_MOCK === "true";
+        const useMock = params.useMock ?? import.meta.env.VITE_USE_MOCK === "true";
         if (useMock) return mapMockRepo.load(params);
 
         const objects = await http<LightingObject[]>("/api/v1/lighting-objects", { auth: true });
