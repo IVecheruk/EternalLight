@@ -5,8 +5,8 @@ export function AdminUsersPage() {
     return (
         <PageShell>
             <PageHeader
-                title="Admin • Users"
-                description="Глобальное управление пользователями, membership и ролями. Доступно только SUPER_ADMIN."
+                title="Админ • Пользователи"
+                description="Глобальное управление пользователями, членством и ролями. Доступно только SUPER_ADMIN."
             />
 
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 text-sm text-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300">

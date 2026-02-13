@@ -18,35 +18,35 @@ type NavSection = {
 
 const navSections: NavSection[] = [
     {
-        title: "Overview",
+        title: "Обзор",
         items: [
-            { to: "/", label: "Home", roles: ADMIN_ROLES },
-            { to: "/all-data", label: "All data", roles: ADMIN_ROLES },
+            { to: "/", label: "Главная", roles: ADMIN_ROLES },
+            { to: "/all-data", label: "Сводные данные", roles: ADMIN_ROLES },
         ],
     },
     {
-        title: "Infrastructure",
+        title: "Инфраструктура",
         items: [
-            { to: "/organizations", label: "Organizations", roles: ADMIN_ROLES },
-            { to: "/districts", label: "Districts", roles: ADMIN_ROLES },
-            { to: "/streets", label: "Streets", roles: ADMIN_ROLES },
-            { to: "/lighting-objects", label: "Lighting objects", roles: ADMIN_ROLES },
+            { to: "/organizations", label: "Организации", roles: ADMIN_ROLES },
+            { to: "/districts", label: "Районы", roles: ADMIN_ROLES },
+            { to: "/streets", label: "Улицы", roles: ADMIN_ROLES },
+            { to: "/lighting-objects", label: "Объекты освещения", roles: ADMIN_ROLES },
         ],
     },
     {
-        title: "Operations",
+        title: "Операции",
         items: [
-            { to: "/acts", label: "Acts", roles: TECHNICIAN_ROLES },
-            { to: "/map", label: "Map", roles: TECHNICIAN_ROLES },
+            { to: "/acts", label: "Акты", roles: TECHNICIAN_ROLES },
+            { to: "/map", label: "Карта", roles: TECHNICIAN_ROLES },
         ],
     },
     {
-        title: "Reference",
-        items: [{ to: "/dictionaries", label: "Dictionaries", roles: ADMIN_ROLES }],
+        title: "Справочники",
+        items: [{ to: "/dictionaries", label: "Справочники", roles: ADMIN_ROLES }],
     },
     {
-        title: "System",
-        items: [{ to: "/users", label: "Users", roles: SUPER_ADMIN_ROLES }],
+        title: "Система",
+        items: [{ to: "/users", label: "Пользователи", roles: SUPER_ADMIN_ROLES }],
     },
 ];
 
@@ -61,7 +61,7 @@ const navLinkClass = ({ isActive, isLocked }: { isActive: boolean; isLocked?: bo
     ].join(" ");
 
 function initials(email?: string) {
-    if (!email) return "U";
+    if (!email) return "П";
     return email.trim().slice(0, 1).toUpperCase();
 }
 
@@ -110,10 +110,10 @@ export const AppLayout = () => {
                             type="button"
                             onClick={toggleTheme}
                             className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:bg-neutral-900"
-                            aria-label="Toggle theme"
-                            title="Toggle theme"
+                            aria-label="Переключить тему"
+                            title="Переключить тему"
                         >
-                            {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
+                            {theme === "dark" ? "Светлая тема" : "Тёмная тема"}
                         </button>
 
                         {/* Auth area */}
@@ -123,14 +123,14 @@ export const AppLayout = () => {
                                     type="button"
                                     onClick={() => setMenuOpen((v) => !v)}
                                     className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-2 py-1.5 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
-                                    aria-label="Open profile menu"
+                                    aria-label="Открыть меню профиля"
                                 >
                                     <div className="grid h-8 w-8 place-items-center rounded-full bg-neutral-900 text-xs font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
                                         {initials(user?.email)}
                                     </div>
 
                                     <span className="hidden text-sm text-neutral-700 dark:text-neutral-200 md:block">
-                    {user?.email ?? "Account"}
+                    {user?.email ?? "Аккаунт"}
                   </span>
                                 </button>
 
@@ -141,7 +141,7 @@ export const AppLayout = () => {
                                             onClick={() => setMenuOpen(false)}
                                             className="block px-4 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
                                         >
-                                            Profile
+                                            Профиль
                                         </Link>
 
                                         <button
@@ -152,7 +152,7 @@ export const AppLayout = () => {
                                             }}
                                             className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
                                         >
-                                            Logout
+                                            Выйти
                                         </button>
                                     </div>
                                 )}
@@ -163,13 +163,13 @@ export const AppLayout = () => {
                                     className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
                                     to="/register"
                                 >
-                                    Register
+                                    Регистрация
                                 </Link>
                                 <Link
                                     className="text-sm text-neutral-700 hover:text-black dark:text-neutral-200 dark:hover:text-white"
                                     to="/login"
                                 >
-                                    Login
+                                    Войти
                                 </Link>
                             </div>
                         )}
@@ -190,7 +190,7 @@ export const AppLayout = () => {
                                 aria-controls="app-navigation"
                                 className="flex w-full items-center justify-between rounded-xl px-2 pb-2 text-left text-xs font-semibold text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
                             >
-                                <span>NAVIGATION</span>
+                                <span>НАВИГАЦИЯ</span>
                                 <svg
                                     viewBox="0 0 20 20"
                                     fill="none"
@@ -242,10 +242,10 @@ export const AppLayout = () => {
                     ) : (
                         <div className="space-y-1 px-2 pb-2">
                             <div className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
-                                NAVIGATION
+                                НАВИГАЦИЯ
                             </div>
                             <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                                Sign in to access navigation.
+                                Войдите, чтобы увидеть навигацию.
                             </div>
                         </div>
                     )}
@@ -257,16 +257,16 @@ export const AppLayout = () => {
                         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 p-6 text-center backdrop-blur-sm dark:bg-neutral-950/60">
                             <div className="max-w-md rounded-2xl border border-neutral-200 bg-white/90 p-5 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-950/90">
                                 <div className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                                    Preview mode
+                                    Режим просмотра
                                 </div>
                                 <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-300">
-                                    Only the profile is available for this role. Ask an administrator to assign a role.
+                                    Для этой роли доступен только профиль. Попросите администратора назначить роль.
                                 </p>
                                 <Link
                                     to="/profile"
                                     className="mt-3 inline-flex items-center justify-center rounded-xl bg-neutral-900 px-4 py-2 text-xs font-medium text-white hover:bg-black dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                                 >
-                                    Go to profile
+                                    Перейти в профиль
                                 </Link>
                             </div>
                         </div>

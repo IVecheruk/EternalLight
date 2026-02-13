@@ -49,7 +49,7 @@ export function LoginPage() {
                         className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none dark:border-neutral-800 dark:bg-neutral-950"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@example.com"
+                        placeholder="почта@example.ru"
                     />
                 </div>
 
@@ -69,7 +69,7 @@ export function LoginPage() {
                     disabled={loading}
                     className="w-full rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                 >
-                    {loading ? "Входим…" : "Войти"}
+                    {loading ? "Входим..." : "Войти"}
                 </button>
 
                 <div className="text-center text-sm text-neutral-600 dark:text-neutral-300">

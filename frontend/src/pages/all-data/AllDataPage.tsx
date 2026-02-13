@@ -34,30 +34,30 @@ type DetailState = {
 };
 
 const sections: Section[] = [
-    { key: "organizations", title: "Organizations", endpoint: "/api/v1/organizations" },
-    { key: "districts", title: "Administrative districts", endpoint: "/api/v1/administrative-districts" },
-    { key: "streets", title: "Streets", endpoint: "/api/v1/streets" },
-    { key: "lightingObjects", title: "Lighting objects", endpoint: "/api/v1/lighting-objects" },
-    { key: "employees", title: "Employees", endpoint: "/api/v1/employees" },
-    { key: "workActs", title: "Work acts", endpoint: "/api/v1/work-acts", paged: { size: 200 } },
-    { key: "workBasisTypes", title: "Work basis types", endpoint: "/api/v1/work-basis-types" },
-    { key: "brigadeRoles", title: "Brigade roles", endpoint: "/api/v1/brigade-roles" },
-    { key: "faultTypes", title: "Fault types", endpoint: "/api/v1/fault-types" },
-    { key: "uoms", title: "Units of measure", endpoint: "/api/v1/uoms" },
-    { key: "equipmentConditions", title: "Equipment conditions", endpoint: "/api/v1/equipment-conditions" },
+    { key: "organizations", title: "Организации", endpoint: "/api/v1/organizations" },
+    { key: "districts", title: "Административные районы", endpoint: "/api/v1/administrative-districts" },
+    { key: "streets", title: "Улицы", endpoint: "/api/v1/streets" },
+    { key: "lightingObjects", title: "Объекты освещения", endpoint: "/api/v1/lighting-objects" },
+    { key: "employees", title: "Сотрудники", endpoint: "/api/v1/employees" },
+    { key: "workActs", title: "Акты работ", endpoint: "/api/v1/work-acts", paged: { size: 200 } },
+    { key: "workBasisTypes", title: "Основания работ", endpoint: "/api/v1/work-basis-types" },
+    { key: "brigadeRoles", title: "Роли бригад", endpoint: "/api/v1/brigade-roles" },
+    { key: "faultTypes", title: "Типы неисправностей", endpoint: "/api/v1/fault-types" },
+    { key: "uoms", title: "Единицы измерения", endpoint: "/api/v1/uoms" },
+    { key: "equipmentConditions", title: "Состояния оборудования", endpoint: "/api/v1/equipment-conditions" },
 ];
 
 const workActDetails: DetailSection[] = [
-    { key: "approval", title: "Approval", getEndpoint: (id) => `/api/v1/work-acts/${id}/approval`, kind: "object" },
-    { key: "basis", title: "Basis", getEndpoint: (id) => `/api/v1/work-acts/${id}/basis`, kind: "list" },
-    { key: "faults", title: "Faults", getEndpoint: (id) => `/api/v1/work-acts/${id}/faults`, kind: "list" },
-    { key: "brigade", title: "Brigade", getEndpoint: (id) => `/api/v1/work-acts/${id}/brigade`, kind: "list" },
-    { key: "materials", title: "Materials", getEndpoint: (id) => `/api/v1/work-acts/${id}/materials`, kind: "list" },
-    { key: "laborItems", title: "Labor items", getEndpoint: (id) => `/api/v1/work-acts/${id}/labor-items`, kind: "list" },
-    { key: "performedWorks", title: "Performed works", getEndpoint: (id) => `/api/v1/work-acts/${id}/performed-works`, kind: "list" },
-    { key: "equipmentUsage", title: "Equipment usage", getEndpoint: (id) => `/api/v1/work-acts/${id}/equipment-usage`, kind: "list" },
-    { key: "installedEquipment", title: "Installed equipment", getEndpoint: (id) => `/api/v1/work-acts/${id}/installed-equipment`, kind: "list" },
-    { key: "dismantledEquipment", title: "Dismantled equipment", getEndpoint: (id) => `/api/v1/work-acts/${id}/dismantled-equipment`, kind: "list" },
+    { key: "approval", title: "Согласование", getEndpoint: (id) => `/api/v1/work-acts/${id}/approval`, kind: "object" },
+    { key: "basis", title: "Основание", getEndpoint: (id) => `/api/v1/work-acts/${id}/basis`, kind: "list" },
+    { key: "faults", title: "Неисправности", getEndpoint: (id) => `/api/v1/work-acts/${id}/faults`, kind: "list" },
+    { key: "brigade", title: "Бригада", getEndpoint: (id) => `/api/v1/work-acts/${id}/brigade`, kind: "list" },
+    { key: "materials", title: "Материалы", getEndpoint: (id) => `/api/v1/work-acts/${id}/materials`, kind: "list" },
+    { key: "laborItems", title: "Трудозатраты", getEndpoint: (id) => `/api/v1/work-acts/${id}/labor-items`, kind: "list" },
+    { key: "performedWorks", title: "Выполненные работы", getEndpoint: (id) => `/api/v1/work-acts/${id}/performed-works`, kind: "list" },
+    { key: "equipmentUsage", title: "Использование оборудования", getEndpoint: (id) => `/api/v1/work-acts/${id}/equipment-usage`, kind: "list" },
+    { key: "installedEquipment", title: "Установленное оборудование", getEndpoint: (id) => `/api/v1/work-acts/${id}/installed-equipment`, kind: "list" },
+    { key: "dismantledEquipment", title: "Демонтированное оборудование", getEndpoint: (id) => `/api/v1/work-acts/${id}/dismantled-equipment`, kind: "list" },
 ];
 
 function formatCell(value: unknown): string {
@@ -85,7 +85,7 @@ function extractRows(data: unknown): {
                 rows: maybePage.content,
                 meta: {
                     total: typeof maybePage.totalElements === "number" ? maybePage.totalElements : undefined,
-                    note: "Paginated response",
+                    note: "Постраничный ответ",
                 },
                 totalPages: typeof maybePage.totalPages === "number" ? maybePage.totalPages : undefined,
             };
@@ -177,7 +177,7 @@ export function AllDataPage() {
                     raw: null,
                     meta: undefined,
                     loading: false,
-                    error: e instanceof Error ? e.message : "Load failed",
+                    error: e instanceof Error ? e.message : "Не удалось загрузить",
                 });
             }
         },
@@ -205,7 +205,7 @@ export function AllDataPage() {
                         raw: null,
                         rows: [],
                         loading: false,
-                        error: e instanceof Error ? e.message : "Load failed",
+                        error: e instanceof Error ? e.message : "Не удалось загрузить",
                     });
                 }
             })
@@ -283,7 +283,7 @@ export function AllDataPage() {
 
             if (detailsLoadedFor) {
                 doc.setFontSize(12);
-                doc.text(`Work act details: ID ${detailsLoadedFor}`, 40, cursorY);
+                doc.text(`Детали акта: ID ${detailsLoadedFor}`, 40, cursorY);
                 cursorY += 16;
 
                 workActDetails.forEach((detail) => {
@@ -308,7 +308,7 @@ export function AllDataPage() {
                 <div className="space-y-1">
                     <h1 className="text-2xl font-semibold tracking-tight">Сводные данные БД</h1>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                        Полный список основных таблиц и связанных данных из backend API.
+                        Полный список основных таблиц и связанных данных из API бэкенда.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -326,14 +326,14 @@ export function AllDataPage() {
                         className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                         disabled={anyLoading}
                     >
-                        {exporting ? "Экспортируем…" : "Экспорт в PDF"}
+                        {exporting ? "Экспортируем..." : "Экспорт в PDF"}
                     </button>
                 </div>
             </header>
 
             <section className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
                 <div className="space-y-1">
-                    <h2 className="text-lg font-semibold">Work act details</h2>
+                    <h2 className="text-lg font-semibold">Детали акта</h2>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
                         Укажите ID акта, чтобы подгрузить связанные таблицы.
                     </p>
@@ -342,7 +342,7 @@ export function AllDataPage() {
                     <input
                         value={workActId}
                         onChange={(e) => setWorkActId(e.target.value)}
-                        placeholder="Work act ID"
+                        placeholder="ID акта"
                         className="w-44 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
                     />
                     <button
@@ -377,7 +377,7 @@ export function AllDataPage() {
                                     <div className="flex items-center justify-between">
                                         <div className="font-medium">{detail.title}</div>
                                         {dState.loading ? (
-                                            <span className="text-xs text-neutral-500">Loading…</span>
+                                            <span className="text-xs text-neutral-500">Загрузка...</span>
                                         ) : null}
                                     </div>
                                     {dState.error ? (
@@ -457,7 +457,7 @@ export function AllDataPage() {
 
                         {sectionState?.loading ? (
                             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-                                Загружаем…
+                                Загружаем...
                             </div>
                         ) : sectionState?.error ? (
                             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">

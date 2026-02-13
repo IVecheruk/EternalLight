@@ -11,7 +11,7 @@ export const DeleteOrganizationButton = ({ id, onDeleted }: Props) => {
     const [error, setError] = useState<string | null>(null);
 
     const handleDelete = async () => {
-        if (!confirm("Delete this organization?")) return;
+        if (!confirm("Удалить эту организацию?")) return;
 
         setLoading(true);
         setError(null);
@@ -40,7 +40,7 @@ export const DeleteOrganizationButton = ({ id, onDeleted }: Props) => {
                 disabled={loading}
                 className="text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
             >
-                Delete
+                Удалить
             </button>
 
             {error && (

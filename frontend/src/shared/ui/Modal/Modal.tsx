@@ -30,10 +30,10 @@ export function Modal({ open, title, onClose, children }: Props) {
                         type="button"
                         onClick={onClose}
                         className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
-                        aria-label="Close"
-                        title="Close"
+                        aria-label="Закрыть"
+                        title="Закрыть"
                     >
-                        ✕
+                        ×
                     </button>
                 </div>
 

@@ -14,7 +14,7 @@ export function RoleGuard({ roles, children, fallbackPath = "/", allowUserPrevie
     const { isReady, isAuthenticated, hasRole } = useAuth();
     const { isViewerOnly } = usePermissions();
 
-    if (!isReady) return <div className="text-sm text-neutral-500">Loading permissions...</div>;
+    if (!isReady) return <div className="text-sm text-neutral-500">Загрузка прав доступа...</div>;
     if (!isAuthenticated) return <Navigate to="/login" replace />;
     if (!hasRole(...roles)) {
         if (allowUserPreview && isViewerOnly) return <>{children}</>;

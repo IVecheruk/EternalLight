@@ -7,10 +7,10 @@ import { useAuth } from "@/features/auth/model/useAuth";
 import { SYSTEM_ROLES, normalizeRoleName, parseAuthorities } from "@/features/permissions/model/roles";
 
 const ROLE_LABELS: Record<string, string> = {
-    [SYSTEM_ROLES.SUPER_ADMIN]: "Super Admin",
-    [SYSTEM_ROLES.ADMIN]: "Admin",
-    [SYSTEM_ROLES.TECHNICIAN]: "Technician",
-    [SYSTEM_ROLES.USER]: "User",
+    [SYSTEM_ROLES.SUPER_ADMIN]: "Супер администратор",
+    [SYSTEM_ROLES.ADMIN]: "Администратор",
+    [SYSTEM_ROLES.TECHNICIAN]: "Техник",
+    [SYSTEM_ROLES.USER]: "Пользователь",
 };
 
 const ROLE_OPTIONS = [
@@ -36,7 +36,7 @@ function resolveRole(user: SystemUser): string {
 }
 
 function roleLabel(role: string) {
-    if (!role) return "Not assigned";
+    if (!role) return "Не назначена";
     return ROLE_LABELS[role] ?? role;
 }
 
@@ -67,7 +67,7 @@ export function UsersPage() {
             });
             setDraftRoles(nextDraft);
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to load users.");
+            setError(e instanceof Error ? e.message : "Не удалось загрузить пользователей.");
             setUsers([]);
         } finally {
             setLoading(false);
@@ -111,7 +111,7 @@ export function UsersPage() {
         const currentRole = resolveRole(u);
         const selected = draftRoles[u.id] ?? currentRole;
         if (!selected) {
-            setError("Select a role before saving.");
+            setError("Выберите роль перед сохранением.");
             return;
         }
         try {
@@ -120,7 +120,7 @@ export function UsersPage() {
             await userApi.updateRole(u.id, selected);
             await load();
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to update role.");
+            setError(e instanceof Error ? e.message : "Не удалось обновить роль.");
         } finally {
             setSavingId(null);
         }
@@ -133,7 +133,7 @@ export function UsersPage() {
             await userApi.updateStatus(u.id, nextActive);
             await load();
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to update status.");
+            setError(e instanceof Error ? e.message : "Не удалось обновить статус.");
         } finally {
             setStatusId(null);
         }
@@ -149,7 +149,7 @@ export function UsersPage() {
         if (!blockTarget) return;
         const reason = blockReason.trim();
         if (!reason) {
-            setBlockError("Reason is required.");
+            setBlockError("Укажите причину.");
             return;
         }
         try {
@@ -160,7 +160,7 @@ export function UsersPage() {
             setBlockTarget(null);
             setBlockReason("");
         } catch (e) {
-            setBlockError(e instanceof Error ? e.message : "Failed to block user.");
+            setBlockError(e instanceof Error ? e.message : "Не удалось заблокировать пользователя.");
         } finally {
             setStatusId(null);
         }
@@ -169,8 +169,8 @@ export function UsersPage() {
     return (
         <PageShell>
             <PageHeader
-                title="User roles"
-                description="Super Admin can assign roles to registered users."
+                title="Роли пользователей"
+                description="Супер администратор может назначать роли зарегистрированным пользователям."
                 actions={
                     <button
                         type="button"
@@ -178,7 +178,7 @@ export function UsersPage() {
                         className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-900"
                         disabled={loading}
                     >
-                        {loading ? "Loading..." : "Refresh"}
+                        {loading ? "Загрузка..." : "Обновить"}
                     </button>
                 }
             />
@@ -188,7 +188,7 @@ export function UsersPage() {
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search by email or name"
+                        placeholder="Поиск по почте или имени"
                         className="w-64 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
                     />
                     <select
@@ -196,7 +196,7 @@ export function UsersPage() {
                         onChange={(e) => setRoleFilter(e.target.value)}
                         className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
                     >
-                        <option value="all">All roles</option>
+                        <option value="all">Все роли</option>
                         {ROLE_OPTIONS.map((role) => (
                             <option key={role} value={role}>
                                 {roleLabel(role)}
@@ -208,12 +208,12 @@ export function UsersPage() {
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
                     >
-                        <option value="all">All statuses</option>
-                        <option value="active">Active</option>
-                        <option value="blocked">Blocked</option>
+                        <option value="all">Все статусы</option>
+                        <option value="active">Активные</option>
+                        <option value="blocked">Заблокированные</option>
                     </select>
                     <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Users: {filtered.length}
+                        Пользователей: {filtered.length}
                     </div>
                 </div>
             </div>
@@ -229,12 +229,12 @@ export function UsersPage() {
                     <table className="min-w-full text-left text-sm">
                         <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500 dark:bg-neutral-900/40 dark:text-neutral-400">
                             <tr>
-                                <th className="px-4 py-3 font-semibold">Email</th>
-                                <th className="px-4 py-3 font-semibold">Name</th>
-                                <th className="px-4 py-3 font-semibold">Current role</th>
-                                <th className="px-4 py-3 font-semibold">Status</th>
-                                <th className="px-4 py-3 font-semibold">Assign role</th>
-                                <th className="px-4 py-3 text-right font-semibold">Action</th>
+                                <th className="px-4 py-3 font-semibold">Эл. почта</th>
+                                <th className="px-4 py-3 font-semibold">Имя</th>
+                                <th className="px-4 py-3 font-semibold">Текущая роль</th>
+                                <th className="px-4 py-3 font-semibold">Статус</th>
+                                <th className="px-4 py-3 font-semibold">Назначить роль</th>
+                                <th className="px-4 py-3 text-right font-semibold">Действие</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
@@ -258,17 +258,17 @@ export function UsersPage() {
                                                     <span>{u.email}</span>
                                                     {needsRole ? (
                                                         <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-semibold uppercase text-red-700">
-                                                            new
+                                                            новый
                                                         </span>
                                                     ) : null}
                                                     {!isActive ? (
                                                         <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-semibold uppercase text-rose-700">
-                                                            blocked
+                                                            заблокирован
                                                         </span>
                                                     ) : null}
                                                     {isSelf ? (
                                                         <span className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                                                            You
+                                                            Вы
                                                         </span>
                                                     ) : null}
                                                 </div>
@@ -279,10 +279,10 @@ export function UsersPage() {
                                             <td className="px-4 py-3">{roleLabel(currentRole)}</td>
                                             <td className="px-4 py-3">
                                                 {isActive ? (
-                                                    <span className="text-xs font-semibold text-emerald-700">Active</span>
+                                                    <span className="text-xs font-semibold text-emerald-700">Активен</span>
                                                 ) : (
                                                     <div className="space-y-1">
-                                                        <span className="text-xs font-semibold text-rose-700">Blocked</span>
+                                                        <span className="text-xs font-semibold text-rose-700">Заблокирован</span>
                                                         {u.blockedReason ? (
                                                             <div className="text-[11px] text-neutral-500">
                                                                 {u.blockedReason}
@@ -297,7 +297,7 @@ export function UsersPage() {
                                                     onChange={(e) => setRole(u.id, e.target.value)}
                                                     className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
                                                 >
-                                                    <option value="">Not assigned</option>
+                                                    <option value="">Не назначена</option>
                                                     {hasUnknownRole ? (
                                                         <option value={currentRole}>{roleLabel(currentRole)}</option>
                                                     ) : null}
@@ -316,7 +316,7 @@ export function UsersPage() {
                                                         className="rounded-xl bg-neutral-900 px-3 py-2 text-xs font-medium text-white hover:bg-black disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                                                         disabled={!isDirty || isSaving}
                                                     >
-                                                        {isSaving ? "Saving..." : "Save"}
+                                                        {isSaving ? "Сохранение..." : "Сохранить"}
                                                     </button>
                                                     <button
                                                         type="button"
@@ -324,7 +324,7 @@ export function UsersPage() {
                                                             if (isActive) {
                                                                 openBlock(u);
                                                             } else {
-                                                                if (!confirm("Unblock user?")) return;
+                                                                if (!confirm("Разблокировать пользователя?")) return;
                                                                 await toggleStatus(u, true);
                                                             }
                                                         }}
@@ -336,9 +336,9 @@ export function UsersPage() {
                                                             isSelf ? "opacity-40 pointer-events-none" : "",
                                                         ].join(" ")}
                                                         disabled={isStatusBusy}
-                                                        title={isSelf ? "You cannot block yourself" : undefined}
+                                                        title={isSelf ? "Нельзя блокировать себя" : undefined}
                                                     >
-                                                        {isStatusBusy ? "Updating..." : isActive ? "Block" : "Unblock"}
+                                                        {isStatusBusy ? "Обновление..." : isActive ? "Заблокировать" : "Разблокировать"}
                                                     </button>
                                                 </div>
                                             </td>
@@ -351,7 +351,7 @@ export function UsersPage() {
                                         colSpan={6}
                                         className="px-4 py-6 text-center text-sm text-neutral-500 dark:text-neutral-400"
                                     >
-                                        {loading ? "Loading..." : "No users found."}
+                                        {loading ? "Загрузка..." : "Пользователи не найдены."}
                                     </td>
                                 </tr>
                             )}
@@ -362,19 +362,19 @@ export function UsersPage() {
 
             <Modal
                 open={!!blockTarget}
-                title={blockTarget ? `Block ${blockTarget.email}` : "Block user"}
+                title={blockTarget ? `Заблокировать ${blockTarget.email}` : "Заблокировать пользователя"}
                 onClose={() => setBlockTarget(null)}
             >
                 <div className="space-y-3 text-sm">
                     <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-                        Blocking will disable access and reset the user role to User.
+                        Блокировка отключит доступ и сбросит роль пользователя на "Пользователь".
                     </div>
                     <label className="space-y-1 text-xs">
-                        <span>Reason for blocking</span>
+                        <span>Причина блокировки</span>
                         <textarea
                             value={blockReason}
                             onChange={(e) => setBlockReason(e.target.value)}
-                            placeholder="Reason..."
+                            placeholder="Причина..."
                             className="min-h-[96px] w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
                         />
                     </label>
@@ -389,14 +389,14 @@ export function UsersPage() {
                             onClick={() => setBlockTarget(null)}
                             className="rounded-xl border border-neutral-200 px-4 py-2 text-xs hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
                         >
-                            Cancel
+                            Отмена
                         </button>
                         <button
                             type="button"
                             onClick={() => void confirmBlock()}
                             className="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
                         >
-                            Block user
+                            Заблокировать пользователя
                         </button>
                     </div>
                 </div>

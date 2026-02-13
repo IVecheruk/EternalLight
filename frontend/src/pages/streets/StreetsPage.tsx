@@ -32,7 +32,7 @@ function StreetForm({
     const submit = async () => {
         const name = form.name.trim();
         if (!name) {
-            setError("Name is required.");
+            setError("Название обязательно.");
             return;
         }
 
@@ -42,7 +42,7 @@ function StreetForm({
             await onSubmit({ name, districtId: form.districtId });
             onDone();
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to save street.");
+            setError(e instanceof Error ? e.message : "Не удалось сохранить улицу.");
         } finally {
             setLoading(false);
         }
@@ -57,14 +57,14 @@ function StreetForm({
             )}
 
             <TextField
-                label="Name"
+                label="Название"
                 value={form.name}
-                placeholder="Brivibas iela"
+                placeholder="ул. Ленина"
                 onChange={(v) => setForm((s) => ({ ...s, name: v }))}
             />
 
             <div className="space-y-2">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">District</label>
+                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">Район</label>
                 <select
                     value={form.districtId ?? 0}
                     onChange={(e) => {
@@ -74,7 +74,7 @@ function StreetForm({
                     className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 dark:focus:border-neutral-600"
                     disabled={loading}
                 >
-                    <option value={0}>Not selected</option>
+                    <option value={0}>Не выбран</option>
                     {districts.map((d) => (
                         <option key={d.id} value={d.id}>
                             {d.name}
@@ -90,7 +90,7 @@ function StreetForm({
                     className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-900"
                     disabled={loading}
                 >
-                    Cancel
+                    Отмена
                 </button>
                 <button
                     type="button"
@@ -98,7 +98,7 @@ function StreetForm({
                     className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                     disabled={loading}
                 >
-                    {loading ? "Saving..." : submitLabel}
+                    {loading ? "Сохранение..." : submitLabel}
                 </button>
             </div>
         </div>
@@ -122,18 +122,18 @@ export function StreetsPage() {
 
     return (
         <TablePage<Street>
-            title="Streets"
-            subtitle="Street directory with district binding."
+            title="Улицы"
+            subtitle="Справочник улиц с привязкой к районам."
             load={load}
             getRowId={(s) => s.id}
             columns={[
                 { key: "id", header: "ID", render: (s) => s.id, className: "w-[90px] text-neutral-500" },
-                { key: "name", header: "Name", render: (s) => s.name },
+                { key: "name", header: "Название", render: (s) => s.name },
                 {
                     key: "district",
-                    header: "District",
+                    header: "Район",
                     render: (s) =>
-                        s.districtId ? districtNameById.get(s.districtId) ?? `#${s.districtId}` : "None",
+                        s.districtId ? districtNameById.get(s.districtId) ?? `#${s.districtId}` : "Не задан",
                 },
             ]}
             canCreate
@@ -141,7 +141,7 @@ export function StreetsPage() {
             canRemove
             renderCreate={({ onDone, onCancel }) => (
                 <StreetForm
-                    submitLabel="Create"
+                    submitLabel="Создать"
                     districts={districts}
                     onSubmit={async (data) => {
                         await streetApi.create({ name: data.name, districtId: data.districtId });
@@ -153,7 +153,7 @@ export function StreetsPage() {
             renderEdit={(row, { onDone, onCancel }) => (
                 <StreetForm
                     initial={{ name: row.name, districtId: row.districtId ?? null }}
-                    submitLabel="Save"
+                    submitLabel="Сохранить"
                     districts={districts}
                     onSubmit={async (data) => {
                         await streetApi.update(row.id, { name: data.name, districtId: data.districtId });

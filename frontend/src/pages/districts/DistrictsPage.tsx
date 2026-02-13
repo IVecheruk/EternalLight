@@ -67,9 +67,9 @@ export function DistrictsPage() {
         <div className="space-y-6">
             <header className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-semibold tracking-tight">Districts</h1>
+                    <h1 className="text-2xl font-semibold tracking-tight">Районы</h1>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                        Административные районы (backend: /api/v1/administrative-districts)
+                        Административные районы (бэкенд: /api/v1/administrative-districts)
                     </p>
                 </div>
 
@@ -77,7 +77,7 @@ export function DistrictsPage() {
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search by name…"
+                        placeholder="Поиск по названию..."
                         className="w-56 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
                     />
                     <button
@@ -85,14 +85,14 @@ export function DistrictsPage() {
                         onClick={onCreate}
                         className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                     >
-                        + New
+                        + Новый
                     </button>
                 </div>
             </header>
 
             {loading && (
                 <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
-                    Loading…
+                    Загрузка...
                 </div>
             )}
 
@@ -103,19 +103,19 @@ export function DistrictsPage() {
             {!loading && !error && (
                 <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
                     <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-3 text-sm font-medium dark:border-neutral-800">
-                        <div>Total: {filtered.length}</div>
+                        <div>Всего: {filtered.length}</div>
                         <button
                             type="button"
                             onClick={() => void load()}
                             className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
                         >
-                            Refresh
+                            Обновить
                         </button>
                     </div>
 
                     {filtered.length === 0 ? (
                         <div className="px-5 py-6 text-sm text-neutral-600 dark:text-neutral-300">
-                            Пока пусто. Нажми <span className="font-medium">+ New</span>.
+                            Пока пусто. Нажмите <span className="font-medium">+ Новый</span>.
                         </div>
                     ) : (
                         <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
@@ -135,7 +135,7 @@ export function DistrictsPage() {
                                                 onClick={() => onEdit(d)}
                                                 className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
                                             >
-                                                Edit
+                                                Редактировать
                                             </button>
 
                                             <button
@@ -143,7 +143,7 @@ export function DistrictsPage() {
                                                 onClick={() => void onDelete(d.id)}
                                                 className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 hover:bg-red-100"
                                             >
-                                                Delete
+                                                Удалить
                                             </button>
                                         </div>
                                     </div>
@@ -156,7 +156,7 @@ export function DistrictsPage() {
 
             <Modal
                 open={open}
-                title={mode === "create" ? "Create administrative district" : "Update administrative district"}
+                title={mode === "create" ? "Создать административный район" : "Изменить административный район"}
                 onClose={() => setOpen(false)}
             >
                 <DistrictForm
@@ -190,7 +190,7 @@ function DistrictForm(props: {
     const submit = async () => {
         const n = name.trim();
         if (!n) {
-            setError("name обязателен.");
+            setError("Название обязательно.");
             return;
         }
 
@@ -222,7 +222,7 @@ function DistrictForm(props: {
             )}
 
             <div className="space-y-2">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">Name</label>
+                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">Название</label>
                 <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -238,7 +238,7 @@ function DistrictForm(props: {
                     className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900"
                     disabled={loading}
                 >
-                    Cancel
+                    Отмена
                 </button>
 
                 <button
@@ -247,7 +247,7 @@ function DistrictForm(props: {
                     className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
                     disabled={loading}
                 >
-                    {loading ? (props.mode === "create" ? "Creating…" : "Saving…") : props.mode === "create" ? "Create" : "Save"}
+                    {loading ? (props.mode === "create" ? "Создание..." : "Сохранение...") : props.mode === "create" ? "Создать" : "Сохранить"}
                 </button>
             </div>
         </div>

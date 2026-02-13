@@ -5,7 +5,7 @@ export function AdminOrganizationsPage() {
     return (
         <PageShell>
             <PageHeader
-                title="Admin • Organizations"
+                title="Админ • Организации"
                 description="Управление тенантами (создание, блокировка, план тарифа, лимиты). Доступно только SUPER_ADMIN."
             />
 

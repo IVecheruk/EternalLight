@@ -2,27 +2,27 @@ import { Link } from "react-router-dom";
 
 const items = [
     {
-        title: "Organizations",
+        title: "Организации",
         description: "Организации (исполнитель/заказчик и т.п.)",
         to: "/organizations",
     },
     {
-        title: "Districts",
+        title: "Районы",
         description: "Административные районы",
         to: "/districts",
     },
     {
-        title: "Streets",
+        title: "Улицы",
         description: "Улицы",
         to: "/streets",
     },
     {
-        title: "Lighting objects",
+        title: "Объекты освещения",
         description: "Объекты освещения",
         to: "/lighting-objects",
     },
     {
-        title: "Acts",
+        title: "Акты",
         description: "Акты и вложенные сущности (бригада, материалы, работы и т.д.)",
         to: "/acts",
     },
@@ -51,9 +51,9 @@ export const DictionariesPage = () => {
     return (
         <div className="space-y-6">
             <header className="space-y-1">
-                <h1 className="text-2xl font-semibold tracking-tight">Dictionaries</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">Справочники</h1>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                    Раздел справочников и сущностей, подключенных к backend API.
+                    Раздел справочников и сущностей, подключенных к API бэкенда.
                 </p>
             </header>
 
@@ -70,14 +70,14 @@ export const DictionariesPage = () => {
                         </div>
 
                         <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            Open <span aria-hidden>→</span>
+                            Открыть <span aria-hidden>→</span>
                         </div>
                     </Link>
                 ))}
             </div>
 
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
-                <div className="mb-2 font-medium text-neutral-900 dark:text-neutral-100">Backend endpoints wired in frontend API layer:</div>
+                <div className="mb-2 font-medium text-neutral-900 dark:text-neutral-100">Подключенные эндпоинты бэкенда в API-слое фронтенда:</div>
                 <div className="flex flex-wrap gap-2">
                     {apiReady.map((entry) => (
                         <span key={entry} className="rounded-full border border-neutral-200 px-3 py-1 dark:border-neutral-700">

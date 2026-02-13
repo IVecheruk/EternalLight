@@ -1052,7 +1052,7 @@ export function MapPage() {
             <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
                     <div className="space-y-2">
-                        <div className="text-sm font-medium">Барнаул • KDE blur + изолинии</div>
+                        <div className="text-sm font-medium">Барнаул • KDE-размытие + изолинии</div>
                         <div className="text-xs text-neutral-600 dark:text-neutral-300">
                             Клик по клетке или точке открывает детали. Контуры строятся по KDE (метрика=kde).
                         </div>

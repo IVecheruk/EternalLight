@@ -12,7 +12,7 @@ export const OrganizationRow = ({ org }: Props) => {
                 <div className="text-xs text-gray-500">{org.city ?? "—"}</div>
             </div>
 
-            <div className="text-xs text-gray-400">ID: {org.id}</div>
+            <div className="text-xs text-gray-400">ИД: {org.id}</div>
         </div>
     );
 };

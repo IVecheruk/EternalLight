@@ -14,7 +14,7 @@ function createCrud(baseUrl: string, options?: { readOnly?: boolean; noGetById?:
     return {
         list: () => http<Entity[]>(baseUrl, { auth: true }),
         get: (id) => {
-            if (options?.noGetById) throw new Error(`GET by id is not supported for ${baseUrl}`);
+            if (options?.noGetById) throw new Error(`Получение по ID не поддерживается для ${baseUrl}`);
             return http<Entity>(`${baseUrl}/${id}`, { auth: true });
         },
         create: (data) =>
@@ -24,7 +24,7 @@ function createCrud(baseUrl: string, options?: { readOnly?: boolean; noGetById?:
                 body: data,
             }),
         update: (id, data) => {
-            if (options?.readOnly) throw new Error(`Update is not supported for ${baseUrl}`);
+            if (options?.readOnly) throw new Error(`Обновление не поддерживается для ${baseUrl}`);
             return http<Entity>(`${baseUrl}/${id}`, {
                 method: "PUT",
                 auth: true,
@@ -32,7 +32,7 @@ function createCrud(baseUrl: string, options?: { readOnly?: boolean; noGetById?:
             });
         },
         remove: (id) => {
-            if (options?.readOnly) throw new Error(`Delete is not supported for ${baseUrl}`);
+            if (options?.readOnly) throw new Error(`Удаление не поддерживается для ${baseUrl}`);
             return http<void>(`${baseUrl}/${id}`, { method: "DELETE", auth: true });
         },
     };

@@ -15,7 +15,7 @@ export const OrganizationRow = ({ organization, onDeleted }: Props) => {
                 </div>
 
                 <div className="mt-1 text-xs text-gray-600">
-                    ID: {organization.id}
+                    ИД: {organization.id}
                     {organization.city && ` • ${organization.city}`}
                 </div>
             </div>

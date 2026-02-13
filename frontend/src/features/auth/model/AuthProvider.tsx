@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         async (dto: LoginRequest) => {
             const res = await authApi.login(dto);
             const token = res.accessToken ?? res.token;
-            if (!token) throw new Error("Missing access token");
+            if (!token) throw new Error("Не найден токен доступа");
             localStorage.setItem(TOKEN_KEY, token);
             await refreshMe();
         },

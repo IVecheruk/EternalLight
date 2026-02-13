@@ -25,7 +25,7 @@ export const Header = () => {
                             `${linkBase} ${isActive ? linkActive : linkInactive}`
                         }
                     >
-                        Home
+                        Главная
                     </NavLink>
 
                     <NavLink
@@ -34,7 +34,7 @@ export const Header = () => {
                             `${linkBase} ${isActive ? linkActive : linkInactive}`
                         }
                     >
-                        Organizations
+                        Организации
                     </NavLink>
 
                     <NavLink
@@ -43,7 +43,7 @@ export const Header = () => {
                             `${linkBase} ${isActive ? linkActive : linkInactive}`
                         }
                     >
-                        Login
+                        Войти
                     </NavLink>
                 </nav>
             </div>

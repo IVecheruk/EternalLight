@@ -1,7 +1,7 @@
 export const HomePage = () => (
     <div className="max-w-2xl">
         <h1 className="text-2xl font-semibold tracking-tight">EternalLight</h1>
-        <p className="mt-2 text-sm text-gray-600">Home</p>
+        <p className="mt-2 text-sm text-gray-600">Главная</p>
     </div>
 );
 

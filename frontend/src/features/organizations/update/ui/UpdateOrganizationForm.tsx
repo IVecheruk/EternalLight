@@ -22,7 +22,7 @@ export const UpdateOrganizationForm = ({ initial, onUpdated, onCancel }: Props) 
         const city = (form.city ?? "").trim();
 
         if (!fullName) {
-            setError("fullName обязателен.");
+            setError("Полное название обязательно.");
             return;
         }
 
@@ -50,7 +50,7 @@ export const UpdateOrganizationForm = ({ initial, onUpdated, onCancel }: Props) 
             )}
 
             <div className="space-y-2">
-                <label className="block text-xs font-medium text-neutral-700">Full name</label>
+                <label className="block text-xs font-medium text-neutral-700">Полное название</label>
                 <input
                     value={form.fullName}
                     onChange={(e) => setForm((s) => ({ ...s, fullName: e.target.value }))}
@@ -59,7 +59,7 @@ export const UpdateOrganizationForm = ({ initial, onUpdated, onCancel }: Props) 
             </div>
 
             <div className="space-y-2">
-                <label className="block text-xs font-medium text-neutral-700">City</label>
+                <label className="block text-xs font-medium text-neutral-700">Город</label>
                 <input
                     value={form.city ?? ""}
                     onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
@@ -74,7 +74,7 @@ export const UpdateOrganizationForm = ({ initial, onUpdated, onCancel }: Props) 
                     className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
                     disabled={loading}
                 >
-                    Cancel
+                    Отмена
                 </button>
 
                 <button
@@ -83,7 +83,7 @@ export const UpdateOrganizationForm = ({ initial, onUpdated, onCancel }: Props) 
                     className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-60"
                     disabled={loading}
                 >
-                    {loading ? "Saving…" : "Save"}
+                    {loading ? "Сохранение..." : "Сохранить"}
                 </button>
             </div>
         </div>

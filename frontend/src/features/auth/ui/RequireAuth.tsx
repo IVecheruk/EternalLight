@@ -8,7 +8,7 @@ export const RequireAuth: React.FC<Props> = ({ children }) => {
     const { isReady, isAuthenticated } = useAuth();
     const location = useLocation();
 
-    if (!isReady) return <div>Loading...</div>;
+    if (!isReady) return <div>Загрузка...</div>;
 
     if (!isAuthenticated) {
         return (
